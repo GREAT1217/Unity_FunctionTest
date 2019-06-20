@@ -32,7 +32,7 @@ public class CameraFollow : MonoBehaviour
     public Range _areaRange = new Range(1f, 1f);
     [Range(1f, 10f)]
     public float _damper = 5f;
-    [HideInInspector]
+    //[HideInInspector]
     public bool _pointOn;
 
     private Vector2 _currentAngle;
@@ -136,6 +136,7 @@ public class CameraFollow : MonoBehaviour
     /// </summary>
     private void UpdateValue()
     {
+        _targetAngle.x = Mathf.Clamp(_targetAngle.x, _angleXRange._min, _angleXRange._max);
         _targetDistance = Mathf.Clamp(_targetDistance, _distanceRange._min, _distanceRange._max);//限制缩放
 
         _currentAngle = Vector2.Lerp(_currentAngle, _targetAngle, _damper * Time.deltaTime);

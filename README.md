@@ -7,3 +7,4 @@ Unity3D+C#
      3.TestSideBar=>侧边工具栏测试
      4.TestGraph=>图表测试
      5.TestLoopScrollRect=>循环滑动框测试
+     6.TestGuide=>新手引导测试
