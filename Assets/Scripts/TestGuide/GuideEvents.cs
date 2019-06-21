@@ -53,7 +53,7 @@ public class GuideEvents : MonoBehaviour, IPointerClickHandler
     private void DoubleClickEvent()
     {
         _time1 = Time.timeSinceLevelLoad;
-        if (_time1 - _time2 < 0.5f)
+        if (_time1 - _time2 < _clickInterval)
         {
             if (DoubleClick != null)
             {
