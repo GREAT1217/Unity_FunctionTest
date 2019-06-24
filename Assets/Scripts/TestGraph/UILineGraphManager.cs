@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [System.Serializable]
-public struct LineData
+public struct GraphData
 {
     public string _desc;
     [Range(0, 100)]
@@ -18,15 +18,19 @@ public struct LineData
         }
     }
 
-    public LineData(string desc, float value)
+    public GraphData(string desc, float value)
     {
         _desc = desc;
         _value = value;
     }
 }
+
+/// <summary>
+/// 折线图
+/// </summary>
 public class UILineGraphManager : MonoBehaviour
 {
-    public LineData[] _datas;//数据
+    public GraphData[] _datas;//数据
     public float _lineWidth = 3;//线宽
     public float _dotRadius = 2;//点半径
     public Transform _leftSide;//左侧描述
@@ -46,51 +50,26 @@ public class UILineGraphManager : MonoBehaviour
     private List<RectTransform> _dotPool;
     private List<RectTransform> _linePool;
 
-    private void Start()
-    {
-        InitData();
-        InitLineGraph();
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            RefeshLineGraph();
-        }
-    }
-
-    /// <summary>
-    /// 初始化数据
-    /// </summary>
-    public void InitData()
-    {
-        _datas = new LineData[10];
-        for (int i = 0; i < _datas.Length; i++)
-        {
-            _datas[i] = new LineData(i.ToString(), Random.Range(0, 100));
-        }
-    }
-
     /// <summary>
     /// 初始化折线图
     /// </summary>
-    public void InitLineGraph()
+    public void InitLineGraph(GraphData[] data)
     {
         //leftSide
         for (int i = 0; i < _leftSide.childCount; i++)
         {
             _leftSide.GetChild(i).GetComponent<Text>().text = (100 - i * 10).ToString();
         }
-        RefeshLineGraph();
+        _datas = data;
+        RefeshLineGraph(_datas);
     }
 
     /// <summary>
     /// 刷新折线图
     /// </summary>
-    public void RefeshLineGraph()
+    public void RefeshLineGraph(GraphData[] data)
     {
-        InitData();//ceshi
+        _datas = data;
         ClearTransform(_descs, _descPool);
         ClearTransform(_dots, _dotPool);
         ClearTransform(_lines, _linePool);
