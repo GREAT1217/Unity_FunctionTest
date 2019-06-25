@@ -4,16 +4,17 @@ using UnityEngine;
 
 public class UIGraphManager : MonoBehaviour
 {
-
     public UILineGraphManager _line;
     public UIBarGraphManager _bar;
+    public UIPieGraphManager _pie;
     private GraphData[] _datas;
 
     private void Start()
     {
         RefeshData();
-        _line.RefeshLineGraph(_datas);
-        _bar.RefeshBarGraph(_datas);
+        _line.InitLineGraph(_datas);
+        _bar.InitBarGraph(_datas);
+        _pie.InitPieGraph(_datas);
     }
 
     private void Update()
@@ -23,6 +24,7 @@ public class UIGraphManager : MonoBehaviour
             RefeshData();
             _line.RefeshLineGraph(_datas);
             _bar.RefeshBarGraph(_datas);
+            _pie.RefeshPieGraph(_datas);
         }
     }
 

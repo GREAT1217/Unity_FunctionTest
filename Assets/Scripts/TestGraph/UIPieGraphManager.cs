@@ -3,82 +3,106 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>
-/// 条形图
-/// </summary>
-public class UIBarGraphManager : MonoBehaviour
+public class UIPieGraphManager : MonoBehaviour
 {
     public GraphData[] _datas;//数据
-    public float _barWidth = 20;//条宽
-    public Transform _leftSide;//左侧描述
+    public bool _sort;//排序
+    public float _pieRadius = 100;//扇形半径
     public RectTransform _descContent;//描述Content
-    public RectTransform _barContent;//条Content
+    public RectTransform _pieContent;//扇形Content
     public RectTransform _descPrefab;//描述Prefab
-    public RectTransform _barPrefab;//条Prefab
+    public RectTransform _piePrefab;//扇形Prefab
 
-    //描述、条 管理
+    //描述、扇形、颜色 管理
     private RectTransform[] _descs;
-    private RectTransform[] _bars;
-    //描述、条 对象池
+    private RectTransform[] _pies;
+    private Color[] _colors;
+    //描述、扇形 对象池
     private List<RectTransform> _descPool;
-    private List<RectTransform> _barPool;
+    private List<RectTransform> _piePool;
 
     /// <summary>
     /// 初始化条形图
     /// </summary>
-    public void InitBarGraph(GraphData[] data)
+    public void InitPieGraph(GraphData[] data)
     {
-        //leftSide
-        for (int i = 0; i < _leftSide.childCount; i++)
-        {
-            _leftSide.GetChild(i).GetComponent<Text>().text = (100 - i * 10).ToString();
-        }
-        RefeshBarGraph(data);
+        RefeshPieGraph(data);
     }
 
     /// <summary>
     /// 刷新条形图
     /// </summary>
-    public void RefeshBarGraph(GraphData[] data)
+    public void RefeshPieGraph(GraphData[] data)
     {
         _datas = data;
+        if (_sort) Sort();
         ClearTransform(_descs, _descPool);
-        ClearTransform(_bars, _barPool);
+        ClearTransform(_pies, _piePool);
         DrawDesc();
-        DrawBar();
+        DrawPie();
+    }
+
+    private GraphData _tempData;
+    /// <summary>
+    /// 排序
+    /// </summary>
+    private void Sort()
+    {
+        for (int i = 0; i < _datas.Length; i++)
+        {
+            for (int j = 0; j < _datas.Length-i-1; j++)
+            {
+                if (_datas[j]._value > _datas[j + 1]._value)
+                {
+                    _tempData = _datas[j];
+                    _datas[j] = _datas[j + 1];
+                    _datas[j + 1] = _tempData;
+                }
+            }
+        }
     }
 
     /// <summary>
-    /// 底部描述
+    /// 描述
     /// </summary>
     private void DrawDesc()
     {
         _descs = new RectTransform[_datas.Length];
+        _colors = new Color[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
             RectTransform desc = GetTransform(_descPrefab, _descContent, ref _descPool);
+            _colors[i] = new Color(0, 1f / _datas.Length * i, 0);
             desc.GetComponent<Text>().text = _datas[i]._desc;
-            desc.SetAsLastSibling();//使用对象池和自动布局组件会调乱顺序，要重置
+            desc.GetComponentInChildren<Image>().color = _colors[i];
             desc.gameObject.SetActive(true);
             _descs[i] = desc;
         }
-        LayoutRebuilder.ForceRebuildLayoutImmediate(_descContent);//使用自动布局组件要刷新UI，刷新位置
     }
 
+    private Vector3 _curAngle;
     /// <summary>
-    /// 画条
+    /// 画扇形
     /// </summary>
-    private void DrawBar()
+    private void DrawPie()
     {
-        _bars = new RectTransform[_datas.Length];
+        float sum = 0;
         for (int i = 0; i < _datas.Length; i++)
         {
-            RectTransform bar = GetTransform(_barPrefab, _barContent, ref _barPool);
-            bar.sizeDelta = new Vector2(_barWidth, bar.sizeDelta.y);
-            bar.localPosition = new Vector3(_descs[i].localPosition.x, bar.localPosition.y, 0);//锚点在中心
-            bar.GetComponent<Image>().fillAmount = _datas[i].Rate;
-            bar.gameObject.SetActive(true);
-            _bars[i] = bar;
+            sum += _datas[i]._value;
+        }
+        _pies = new RectTransform[_datas.Length];
+        for (int i = 0; i < _datas.Length; i++)
+        {
+            RectTransform pie = GetTransform(_piePrefab, _pieContent, ref _piePool);
+            pie.sizeDelta = Vector2.one * _pieRadius * 2;
+            float rate = _datas[i]._value / sum;
+            pie.GetComponent<Image>().fillAmount = rate;
+            pie.GetComponent<Image>().color = _colors[i];
+            _curAngle += Vector3.forward * 360 * rate;
+            pie.localEulerAngles = _curAngle;
+            pie.gameObject.SetActive(true);
+            _pies[i] = pie;
         }
     }
 

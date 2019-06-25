@@ -60,8 +60,7 @@ public class UILineGraphManager : MonoBehaviour
         {
             _leftSide.GetChild(i).GetComponent<Text>().text = (100 - i * 10).ToString();
         }
-        _datas = data;
-        RefeshLineGraph(_datas);
+        RefeshLineGraph(data);
     }
 
     /// <summary>
