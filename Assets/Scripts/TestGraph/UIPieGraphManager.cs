@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
+/// <summary>
+/// 扇形图
+/// </summary>
 public class UIPieGraphManager : MonoBehaviour
 {
     public GraphData[] _datas;//数据
@@ -12,6 +16,7 @@ public class UIPieGraphManager : MonoBehaviour
     public RectTransform _pieContent;//扇形Content
     public RectTransform _descPrefab;//描述Prefab
     public RectTransform _piePrefab;//扇形Prefab
+    public float _tweenTime = 1f;
 
     //描述、扇形、颜色 管理
     private RectTransform[] _descs;
@@ -21,8 +26,13 @@ public class UIPieGraphManager : MonoBehaviour
     private List<RectTransform> _descPool;
     private List<RectTransform> _piePool;
 
+    private void Start()
+    {
+
+    }
+
     /// <summary>
-    /// 初始化条形图
+    /// 初始化扇形图
     /// </summary>
     public void InitPieGraph(GraphData[] data)
     {
@@ -30,7 +40,7 @@ public class UIPieGraphManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 刷新条形图
+    /// 刷新扇形图
     /// </summary>
     public void RefeshPieGraph(GraphData[] data)
     {
@@ -50,7 +60,7 @@ public class UIPieGraphManager : MonoBehaviour
     {
         for (int i = 0; i < _datas.Length; i++)
         {
-            for (int j = 0; j < _datas.Length-i-1; j++)
+            for (int j = 0; j < _datas.Length - i - 1; j++)
             {
                 if (_datas[j]._value > _datas[j + 1]._value)
                 {
@@ -72,7 +82,7 @@ public class UIPieGraphManager : MonoBehaviour
         for (int i = 0; i < _datas.Length; i++)
         {
             RectTransform desc = GetTransform(_descPrefab, _descContent, ref _descPool);
-            _colors[i] = new Color(0, 1f / _datas.Length * i, 0);
+            _colors[i] = new Color(0, (float)i / _datas.Length, 0);
             desc.GetComponent<Text>().text = _datas[i]._desc;
             desc.GetComponentInChildren<Image>().color = _colors[i];
             desc.gameObject.SetActive(true);
@@ -97,11 +107,13 @@ public class UIPieGraphManager : MonoBehaviour
             RectTransform pie = GetTransform(_piePrefab, _pieContent, ref _piePool);
             pie.sizeDelta = Vector2.one * _pieRadius * 2;
             float rate = _datas[i]._value / sum;
-            pie.GetComponent<Image>().fillAmount = rate;
+            pie.GetComponent<Image>().fillAmount = 0;
             pie.GetComponent<Image>().color = _colors[i];
             _curAngle += Vector3.forward * 360 * rate;
             pie.localEulerAngles = _curAngle;
             pie.gameObject.SetActive(true);
+            UIPieImage pieImg = pie.GetComponent<UIPieImage>();
+            pieImg.DOFillAmount(rate, _tweenTime).OnComplete(() => pieImg.ResetCollider());
             _pies[i] = pie;
         }
     }

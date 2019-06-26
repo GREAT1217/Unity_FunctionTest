@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 /// <summary>
 /// 条形图
@@ -15,6 +16,7 @@ public class UIBarGraphManager : MonoBehaviour
     public RectTransform _barContent;//条Content
     public RectTransform _descPrefab;//描述Prefab
     public RectTransform _barPrefab;//条Prefab
+    public float _tweenTime = 1f;
 
     //描述、条 管理
     private RectTransform[] _descs;
@@ -76,8 +78,9 @@ public class UIBarGraphManager : MonoBehaviour
             RectTransform bar = GetTransform(_barPrefab, _barContent, ref _barPool);
             bar.sizeDelta = new Vector2(_barWidth, bar.sizeDelta.y);
             bar.localPosition = new Vector3(_descs[i].localPosition.x, bar.localPosition.y, 0);//锚点在中心
-            bar.GetComponent<Image>().fillAmount = _datas[i].Rate;
+            bar.GetComponent<Image>().fillAmount = 0;
             bar.gameObject.SetActive(true);
+            bar.GetComponent<Image>().DOFillAmount(_datas[i].Rate, _tweenTime);
             _bars[i] = bar;
         }
     }

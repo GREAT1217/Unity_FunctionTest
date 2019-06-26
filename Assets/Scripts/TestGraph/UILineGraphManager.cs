@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 [System.Serializable]
 public struct GraphData
@@ -40,6 +41,7 @@ public class UILineGraphManager : MonoBehaviour
     public RectTransform _descPrefab;//描述Prefab
     public RectTransform _dotPrefab;//点Prefab
     public RectTransform _linePrefab;//线Prefab
+    public float _tweenTime = 1f;
 
     //描述、点、线 管理
     private RectTransform[] _descs;
@@ -74,7 +76,7 @@ public class UILineGraphManager : MonoBehaviour
         ClearTransform(_lines, _linePool);
         DrawDesc();
         DrawDot();
-        DrawLine();
+        DrawLines();
     }
 
     /// <summary>
@@ -114,25 +116,35 @@ public class UILineGraphManager : MonoBehaviour
     /// <summary>
     /// 画线
     /// </summary>
-    private void DrawLine()
+    private void DrawLines()
     {
         _lines = new RectTransform[_datas.Length - 1];
-        Vector2 curPos = _dots[0].localPosition;
-        for (int i = 1; i < _dots.Length; i++)
-        {
-            Vector2 nextPos = _dots[i].localPosition;
-            float length = Vector2.Distance(curPos, nextPos);
-            Vector3 dir = (nextPos.y > curPos.y) ? nextPos - curPos : curPos - nextPos;
-            float angle = Vector3.Angle(dir.normalized, Vector3.right);
-            Vector2 center = (curPos + nextPos) / 2;
-            RectTransform line = GetTransform(_linePrefab, _lineContent, ref _linePool);
-            line.localEulerAngles = Vector3.forward * (angle + 90);
-            line.localPosition = center;
-            line.sizeDelta = new Vector2(_lineWidth, length);
-            line.gameObject.SetActive(true);
-            _lines[i - 1] = line;
-            curPos = nextPos;
-        }
+        DrawLine();
+    }
+
+    /// <summary>
+    /// 画线
+    /// </summary>
+    /// <param name="index"></param>
+    private void DrawLine(int index = 0)
+    {
+        if (index >= _lines.Length) return;
+        Vector2 curPos = _dots[index].localPosition;
+        Vector2 nextPos = _dots[index + 1].localPosition;
+        float length = Vector2.Distance(curPos, nextPos);
+        Vector3 dir = (nextPos.y > curPos.y) ? nextPos - curPos : curPos - nextPos;
+        float angle = Vector3.Angle(dir.normalized, Vector3.right);
+        Vector2 center = (curPos + nextPos) / 2;
+        RectTransform line = GetTransform(_linePrefab, _lineContent, ref _linePool);
+        line.localEulerAngles = Vector3.forward * (angle + 90);
+        line.localPosition = center;
+        line.sizeDelta = new Vector2(_lineWidth, length);
+        line.gameObject.SetActive(true);
+        _lines[index] = line;
+        Image img = line.GetComponent<Image>();
+        img.fillAmount = 0;
+        img.fillOrigin = dir.x > 0 ? 1 : 0;
+        img.DOFillAmount(1, _tweenTime / _lines.Length).OnComplete(() => DrawLine(index + 1));
     }
 
     /// <summary>
