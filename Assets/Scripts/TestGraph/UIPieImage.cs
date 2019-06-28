@@ -4,16 +4,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(PolygonCollider2D))]
 public class UIPieImage : Image
 {
-    private RectTransform _rectTrans = null;
     private PolygonCollider2D _polygon = null;
-    private RectTransform RectTrans
-    {
-        get
-        {
-            if (_rectTrans == null) _rectTrans = GetComponent<RectTransform>();
-            return _rectTrans;
-        }
-    }
     private PolygonCollider2D Polygon
     {
         get
@@ -28,7 +19,7 @@ public class UIPieImage : Image
     /// </summary>
     public void ResetCollider()
     {
-        float radius = RectTrans.sizeDelta.y / 2;
+        float radius = rectTransform.sizeDelta.y / 2;
         float radian = fillAmount * 360 * Mathf.Deg2Rad;
         SetColliderPath(radius, radian);
     }
