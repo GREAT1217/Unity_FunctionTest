@@ -12,23 +12,21 @@ public class UIPieGraphManager : MonoBehaviour
     public GraphData[] _datas;//数据
     public bool _sort;//排序
     public float _pieRadius = 100;//扇形半径
-    public RectTransform _descContent;//描述Content
+    public RectTransform _noteContent;//注解Content
     public RectTransform _pieContent;//扇形Content
-    public RectTransform _descPrefab;//描述Prefab
-    public RectTransform _piePrefab;//扇形Prefab
-    public float _tweenTime = 1f;
+    public Text _notePrefab;//注解Prefab
+    public UIPieImage _piePrefab;//扇形Prefab
+    public float _tweenTime = 1f;//动画时间
 
-    //描述、扇形、颜色 管理
-    private RectTransform[] _descs;
-    private RectTransform[] _pies;
+    //注解、扇形、颜色 管理
+    private Text[] _notes;
+    private UIPieImage[] _pies;
     private Color[] _colors;
-    //描述、扇形 对象池
-    private List<RectTransform> _descPool;
-    private List<RectTransform> _piePool;
 
-    private void Start()
+    private void Awake()
     {
-
+        ObjectPool.Instance.SetPrefab(_notePrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(_piePrefab.gameObject);
     }
 
     /// <summary>
@@ -46,9 +44,9 @@ public class UIPieGraphManager : MonoBehaviour
     {
         _datas = data;
         if (_sort) Sort();
-        ClearTransform(_descs, _descPool);
-        ClearTransform(_pies, _piePool);
-        DrawDesc();
+        ClearTransform(_noteContent);
+        ClearTransform(_pieContent);
+        DrawNote();
         DrawPie();
     }
 
@@ -73,20 +71,20 @@ public class UIPieGraphManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 描述
+    /// 颜色注解
     /// </summary>
-    private void DrawDesc()
+    private void DrawNote()
     {
-        _descs = new RectTransform[_datas.Length];
+        _notes = new Text[_datas.Length];
         _colors = new Color[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            RectTransform desc = GetTransform(_descPrefab, _descContent, ref _descPool);
+            Text note = ObjectPool.Instance.GetObject(_notePrefab.name, _noteContent).GetComponent<Text>();
             _colors[i] = new Color(0, (float)i / _datas.Length, 0);
-            desc.GetComponent<Text>().text = _datas[i]._desc;
-            desc.GetComponentInChildren<Image>().color = _colors[i];
-            desc.gameObject.SetActive(true);
-            _descs[i] = desc;
+            note.text = _datas[i]._desc;
+            note.GetComponentInChildren<Image>().color = _colors[i];
+            note.gameObject.SetActive(true);
+            _notes[i] = note;
         }
     }
 
@@ -101,19 +99,18 @@ public class UIPieGraphManager : MonoBehaviour
         {
             sum += _datas[i]._value;
         }
-        _pies = new RectTransform[_datas.Length];
+        _pies = new UIPieImage[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            RectTransform pie = GetTransform(_piePrefab, _pieContent, ref _piePool);
-            pie.sizeDelta = Vector2.one * _pieRadius * 2;
+            UIPieImage pie = ObjectPool.Instance.GetObject(_piePrefab.name, _pieContent).GetComponent<UIPieImage>();
+            pie.rectTransform.sizeDelta = Vector2.one * _pieRadius * 2;
             float rate = _datas[i]._value / sum;
-            pie.GetComponent<Image>().fillAmount = 0;
-            pie.GetComponent<Image>().color = _colors[i];
+            pie.fillAmount = 0;
+            pie.color = _colors[i];
             _curAngle += Vector3.forward * 360 * rate;
-            pie.localEulerAngles = _curAngle;
+            pie.rectTransform.localEulerAngles = _curAngle;
             pie.gameObject.SetActive(true);
-            UIPieImage pieImg = pie.GetComponent<UIPieImage>();
-            pieImg.DOFillAmount(rate, _tweenTime).OnComplete(() => pieImg.ResetCollider());
+            pie.DOFillAmount(rate, _tweenTime).OnComplete(() => pie.ResetCollider());
             _pies[i] = pie;
         }
     }
@@ -123,32 +120,12 @@ public class UIPieGraphManager : MonoBehaviour
     /// </summary>
     /// <param name="trans"></param>
     /// <param name="pool"></param>
-    private void ClearTransform(RectTransform[] trans, List<RectTransform> pool)
+    private void ClearTransform(Transform parent)
     {
-        if (trans == null) return;
-        for (int i = 0; i < trans.Length; i++)
+        for (int i = 1; i < parent.childCount; i++)
         {
-            trans[i].gameObject.SetActive(false);
-            pool.Add(trans[i]);
+            ObjectPool.Instance.RecycleObj(parent.GetChild(i).gameObject, parent);
         }
     }
 
-    /// <summary>
-    /// Instantiate
-    /// </summary>
-    /// <param name="prefab"></param>
-    /// <param name="parent"></param>
-    /// <param name="pool">对象池</param>
-    /// <returns></returns>
-    private RectTransform GetTransform(RectTransform prefab, RectTransform parent, ref List<RectTransform> pool)
-    {
-        if (pool == null) pool = new List<RectTransform>();//这里不用ref的话，相当于没有new空间，可能是直接被回收了
-        if (pool.Count <= 0)
-        {
-            return Instantiate(prefab, parent);
-        }
-        RectTransform temp = pool[0];
-        pool.RemoveAt(0);
-        return temp;
-    }
 }

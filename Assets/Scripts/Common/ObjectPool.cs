@@ -4,62 +4,84 @@ using UnityEngine;
 
 public class ObjectPool : MonoSingleton<ObjectPool>
 {
+    private Dictionary<string, List<GameObject>> _objectDict;
+    private Dictionary<string, GameObject> _prefabDict;
     /// <summary>
     /// 对象池
     /// </summary>
-    private Dictionary<string, List<GameObject>> pool;
+    private Dictionary<string, List<GameObject>> ObjectDict
+    {
+        get
+        {
+            if (_objectDict == null) _objectDict = new Dictionary<string, List<GameObject>>();
+            return _objectDict;
+        }
+
+        set
+        {
+            _objectDict = value;
+        }
+    }
+    /// <summary>
+    /// 预设体字典
+    /// </summary>
+    private Dictionary<string, GameObject> PrefabDict
+    {
+        get
+        {
+            if (_prefabDict == null) _prefabDict = new Dictionary<string, GameObject>();
+            return _prefabDict;
+        }
+
+        set
+        {
+            _prefabDict = value;
+        }
+    }
 
     /// <summary>
-    /// 预设体
+    /// 记录预设体字典
     /// </summary>
-    private Dictionary<string, GameObject> prefabs;
+    /// <param name="obj"></param>
+    public void SetPrefab(GameObject obj)
+    {
+        if (PrefabDict.ContainsKey(obj.name)) return;
+        PrefabDict.Add(obj.name, obj);
+    }
 
     /// <summary>
     /// 从对象池中获取对象
     /// </summary>
     /// <param name="objName"></param>
     /// <returns></returns>
-    public GameObject GetObj(string objName)
+    public GameObject GetObject(string objName, Transform parent = null)
     {
-        //结果对象
+        if (parent == null) parent = transform;
         GameObject result = null;
-        //判断是否有该名字的对象池
-        if (pool.ContainsKey(objName))
+        if (ObjectDict.ContainsKey(objName))
         {
-            //对象池里有对象
-            if (pool[objName].Count > 0)
+            if (ObjectDict[objName].Count > 0)
             {
-                //获取结果
-                result = pool[objName][0];
-                //激活对象
-                result.SetActive(true);
-                //从池中移除该对象
-                pool[objName].Remove(result);
-                //返回结果
+                result = ObjectDict[objName][0];
+                result.transform.SetParent(parent);
+                ObjectDict[objName].RemoveAt(0);
                 return result;
             }
         }
-        //如果没有该名字的对象池或者该名字对象池没有对象
-
         GameObject prefab = null;
-        //如果已经加载过该预设体
-        if (prefabs.ContainsKey(objName))
+        if (PrefabDict.ContainsKey(objName))
         {
-            prefab = prefabs[objName];
+            prefab = PrefabDict[objName];
         }
-        else     //如果没有加载过该预设体
+        else
         {
-            //加载预设体
-            prefab = Resources.Load<GameObject>("Prefabs/" + objName);
-            //更新字典
-            prefabs.Add(objName, prefab);
+            Debug.LogError("[ObjectPool]:   prefab is null");
+            return null;
+            //prefab = Resources.Load<GameObject>("Prefabs/" + objName);
+            //_prefabDict.Add(objName, prefab);
         }
-
-        //生成
-        result = UnityEngine.Object.Instantiate(prefab);
-        //改名（去除 Clone）
+        result = Instantiate(prefab, parent);
         result.name = objName;
-        //返回
         return result;
     }
 
@@ -67,21 +89,19 @@ public class ObjectPool : MonoSingleton<ObjectPool>
     /// 回收对象到对象池
     /// </summary>
     /// <param name="objName"></param>
-    public void RecycleObj(GameObject obj)
+    public void RecycleObj(GameObject obj, Transform parent = null)
     {
-        //设置为非激活
+        if (parent == null) parent = transform;
         obj.SetActive(false);
-        //判断是否有该对象的对象池
-        if (pool.ContainsKey(obj.name))
+        obj.transform.SetParent(parent);
+        if (ObjectDict.ContainsKey(obj.name))
         {
-            //放置到该对象池
-            pool[obj.name].Add(obj);
+            ObjectDict[obj.name].Add(obj);
         }
         else
         {
-            //创建该类型的池子，并将对象放入
-            pool.Add(obj.name, new List<GameObject>() { obj });
+            ObjectDict.Add(obj.name, new List<GameObject>() { obj });
         }
-
     }
+
 }

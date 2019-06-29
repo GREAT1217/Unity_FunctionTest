@@ -4,19 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
-public class UIController : MonoBehaviour
+public class UIController : MonoSingleton<UIController>
 {
-    public static UIController Instance;
-
     public UIFirstLevel _firstLevel;
     public UISecondLevel _secondLevel;
-
-    // Use this for initialization
-    void Awake()
-    {
-        if (Instance == null) Instance = this;
-    }
-
-
 
 }
