@@ -88,7 +88,6 @@ public class UIPieGraphManager : MonoBehaviour
         }
     }
 
-    private Vector3 _curAngle;
     /// <summary>
     /// 画扇形
     /// </summary>
@@ -100,6 +99,7 @@ public class UIPieGraphManager : MonoBehaviour
             sum += _datas[i]._value;
         }
         _pies = new UIPieImage[_datas.Length];
+        Vector3 _curAngle = Vector3.zero;
         for (int i = 0; i < _datas.Length; i++)
         {
             UIPieImage pie = ObjectPool.Instance.GetObject(_piePrefab.name, _pieContent).GetComponent<UIPieImage>();
@@ -109,7 +109,9 @@ public class UIPieGraphManager : MonoBehaviour
             pie.color = _colors[i];
             _curAngle += Vector3.forward * 360 * rate;
             pie.rectTransform.localEulerAngles = _curAngle;
+            //pie.rectTransform.localScale = Vector3.zero;
             pie.gameObject.SetActive(true);
+            //pie.rectTransform.DOScale(Vector3.one, _tweenTime);
             pie.DOFillAmount(rate, _tweenTime).OnComplete(() => pie.ResetCollider());
             _pies[i] = pie;
         }
