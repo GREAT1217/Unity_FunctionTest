@@ -135,16 +135,16 @@ public class UILineGraphManager : MonoBehaviour
         Vector2 curPos = _dots[index].localPosition;
         Vector2 nextPos = _dots[index + 1].localPosition;
         float length = Vector2.Distance(curPos, nextPos);
-        Vector3 dir = (nextPos.y > curPos.y) ? nextPos - curPos : curPos - nextPos;
-        float angle = Vector3.Angle(dir.normalized, Vector3.right);
+        Vector3 dir = curPos - nextPos;
+        float angle = Vector3.Angle(Vector3.up, dir);
         Vector2 center = (curPos + nextPos) / 2;
         Image line = ObjectPool.Instance.GetObject(_linePrefab.name, _lineContent).GetComponent<Image>();
-        line.rectTransform.localEulerAngles = Vector3.forward * (angle + 90);
+        line.rectTransform.localEulerAngles = Vector3.forward * angle;
         line.rectTransform.localPosition = center;
         line.rectTransform.sizeDelta = new Vector2(_lineWidth, length);
         line.gameObject.SetActive(true);
         line.fillAmount = 0;
-        line.fillOrigin = dir.x > 0 ? 1 : 0;
+        line.fillOrigin = dir.x > 0 ? 0 : 1;
         line.DOFillAmount(1, _tweenTime / _lines.Length).OnComplete(() => DrawLine(index + 1));
         _lines[index] = line;
     }
