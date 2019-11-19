@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class test : MonoBehaviour
 {
@@ -23,11 +24,19 @@ public class test : MonoBehaviour
 
     //}
 
-    public GuideEvents events;
+    //public GuideEvents events;
 
-    private void Start()
+    //private void Start()
+    //{
+    //    events.SingleClick += () => Debug.Log("单击");
+    //    events.DoubleClick += () => Debug.Log("双击");
+    //}
+
+    public Image _image;
+
+    void Start()
     {
-        events.SingleClick += () => Debug.Log("单击");
-        events.DoubleClick += () => Debug.Log("双击");
+        _image.DOFillAmount(0, 5);
+        _image.rectTransform.DORotate(Vector3.forward*180, 5);
     }
 }

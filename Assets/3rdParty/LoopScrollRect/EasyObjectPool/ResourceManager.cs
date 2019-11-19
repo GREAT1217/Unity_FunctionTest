@@ -21,7 +21,7 @@ namespace SG
                 if (mInstance == null)
                 {
                     GameObject go = new GameObject("ResourceManager", typeof(ResourceManager));
-                    go.transform.localPosition = new Vector3(9999999, 9999999, 9999999);
+                    //go.transform.localPosition = new Vector3(9999999, 9999999, 9999999);
                     // Kanglai: if we have `GO.hideFlags |= HideFlags.DontSave;`, we will encounter Destroy problem when exit playing
                     // However we should keep using this in Play mode only!
                     mInstance = go.GetComponent<ResourceManager>();

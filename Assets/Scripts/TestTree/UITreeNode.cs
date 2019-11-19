@@ -13,15 +13,15 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
 
     public Button _button;//收纳按钮
     public Text _content;//当前节点名
-    public Tree _tree;//当前节点
+    public FileNode _node;//当前节点
     public float _clickInterval = 0.2f;//双击时间间隔
 
     private GameObject[] _subObjs;//子对象
     private float _time1, _time2;
 
-    public void InitData(Tree tree)
+    public void InitData(FileNode node)
     {
-        _tree = tree;
+        _node = node;
         InitUI();
     }
 
@@ -30,10 +30,10 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
     /// </summary>
     private void InitUI()
     {
-        _button.transform.localPosition = Vector3.right * (_tree._grade * 20 - 100);
-        _content.transform.localPosition = Vector3.right * (_tree._grade * 20);
-        _content.text = _tree._curNode.name;
-        _button.gameObject.SetActive(_tree._subNodes.Length != 0);
+        _button.transform.localPosition = Vector3.right * (_node._grade * 20 - 100);
+        _content.transform.localPosition = Vector3.right * (_node._grade * 20);
+        _content.text = _node._fileName;
+        _button.gameObject.SetActive(_node._hasChild);
         _button.onClick.AddListener(OnButtonClick);
     }
 
@@ -53,7 +53,6 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
 
     private void ShowSubObjs()
     {
-        if (_tree._subNodes.Length <= 0) return;
         if (_subObjs != null)
         {
             for (int i = 0; i < _subObjs.Length; i++)
@@ -63,11 +62,12 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
         }
         else
         {
-            _subObjs = new GameObject[_tree._subNodes.Length];
+            _node._childNodes = UITreeManager.GetFile(_node._filePath, _node._grade + 1);
+            _subObjs = new GameObject[_node._childNodes.Length];
             int space = -20;
             for (int i = 0; i < _subObjs.Length; i++)
             {
-                _subObjs[i] = UITreeManager.InitNode(transform, _tree._subNodes[i], space);
+                _subObjs[i] = UITreeManager.InitNode(transform, _node._childNodes[i], space);
                 space -= 20;
             }
         }

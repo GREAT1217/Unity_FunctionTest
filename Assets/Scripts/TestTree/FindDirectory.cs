@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.IO;
 using UnityEngine;
-using System.IO;
 
 public class FindDirectory : MonoBehaviour
 {

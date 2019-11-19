@@ -1,132 +1,110 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
-
-public class Tree
-{
-    /// <summary>
-    /// 当前节点
-    /// </summary>
-    public Transform _curNode;
-    /// <summary>
-    /// 当前节点等级
-    /// </summary>
-    public int _grade;
-    /// <summary>
-    /// 当前节点路径
-    /// 作为子节点父对象
-    /// </summary>
-    public string _path;
-    /// <summary>
-    /// 是否有子节点
-    /// </summary>
-    public bool _hasNodes;
-    /// <summary>
-    /// 子节点
-    /// 是拥有子节点的子节点
-    /// </summary>
-    public Tree[] _subNodes;
-    /// <summary>
-    /// 当前节点对象组件
-    /// </summary>
-    public Component _component;
-
-    public Tree() { }
-}
-
-public class Tree<T> : Tree where T : Component
-{
-    /// <summary>
-    /// 构造函数
-    /// </summary>
-    /// <param name="curNode">当前节点</param>
-    /// <param name="grade">当前节点等级</param>
-    /// <param name="path">当前节点路径</param>
-    public Tree(Transform curNode, int grade, string path = "")
-    {
-        _curNode = curNode;
-        _grade = grade;
-        _path = path + "/" + curNode.name;
-        _component = _curNode.GetComponent<T>();
-        _hasNodes = (_component != null);
-        SubNodes();
-    }
-
-    private void SubNodes()
-    {
-        //初始化所有子节点
-        _subNodes = new Tree<T>[_curNode.childCount];
-        for (int i = 0; i < _subNodes.Length; i++)
-        {
-            _subNodes[i] = new Tree<T>(_curNode.GetChild(i), _grade + 1, _path);
-        }
-        //统计没有子节点的子节点
-        int length = 0;
-        for (int i = 0; i < _subNodes.Length; i++)
-        {
-            if (!_subNodes[i]._hasNodes) length++;
-        }
-        if (length == 0) return;
-        Tree<T>[] tempNodes = new Tree<T>[_subNodes.Length - length];
-        //整理有子节点的子节点
-        int index = 0;
-        for (int i = 0; i < _subNodes.Length; i++)
-        {
-            if (_subNodes[i]._hasNodes)
-            {
-                tempNodes[index] = _subNodes[i] as Tree<T>;
-                index++;
-            }
-        }
-        _subNodes = tempNodes;
-    }
-}
 
 public class UITreeManager : MonoBehaviour
 {
-    public static GameObject _prefab;
+    private static RectTransform _root;
+    private static GameObject _prefab;
+    private static List<GameObject> _nodeList;//当前显示的节点
 
-    public static List<GameObject> TreeNodes { get; set; }
+    public static List<GameObject> NodeList
+    {
+        get
+        {
+            if (_nodeList == null) _nodeList = new List<GameObject>();
+            return _nodeList;
+        }
+    }
 
-    public static GameObject InitNode(Transform parent, Tree tree, int space)
+    public static FileNode[] GetFile(string path, int grade)
+    {
+        if (Directory.Exists(path))
+        {
+            DirectoryInfo directory = new DirectoryInfo(path);
+            DirectoryInfo[] dirs = directory.GetDirectories("*", SearchOption.TopDirectoryOnly);
+            FileInfo[] files = directory.GetFiles("*", SearchOption.TopDirectoryOnly);
+            List<FileNode> nodes = new List<FileNode>();
+            for (int i = 0; i < dirs.Length; i++)
+            {
+                nodes.Add(new FileNode(grade, dirs[i].Name, dirs[i].FullName, true));
+            }
+            for (int i = 0; i < files.Length; i++)
+            {
+                if (files[i].Name.EndsWith(".meta")) continue;
+                nodes.Add(new FileNode(grade, files[i].Name, files[i].FullName, false));
+            }
+            return nodes.ToArray();
+        }
+        return null;
+    }
+
+    public static GameObject InitNode(Transform parent, FileNode node, int space)
     {
         GameObject obj = Instantiate(_prefab, parent);
         obj.transform.localPosition = Vector2.up * space;
-        obj.GetComponent<UITreeNode>().InitData(tree);
+        obj.GetComponent<UITreeNode>().InitData(node);
+        obj.SetActive(true);
         return obj;
     }
 
     public static void InsertRange(GameObject obj, GameObject[] subObjs)
     {
-        int index = TreeNodes.IndexOf(obj) + 1;
-        TreeNodes.InsertRange(index, subObjs);
+        int index = NodeList.IndexOf(obj) + 1;
+        NodeList.InsertRange(index, subObjs);
         ChangePosition(index);
     }
 
     public static void RemoveRange(GameObject obj, int count)
     {
-        int index = TreeNodes.IndexOf(obj) + 1;
-        TreeNodes.RemoveRange(index, count);
+        int index = NodeList.IndexOf(obj) + 1;
+        NodeList.RemoveRange(index, count);
         ChangePosition(index);
     }
 
-    private static void ChangePosition(int startIndex)
+    private static void ChangePosition(int startIndex = 0)
     {
         RectTransform rectTrans = _prefab.GetComponent<RectTransform>();
-        for (int i = startIndex; i < TreeNodes.Count; i++)
+        if (startIndex == 0)
         {
-            TreeNodes[i].transform.position = TreeNodes[0].transform.position - new Vector3(0, i * rectTrans.rect.height, 0);
+            NodeList[0].transform.position = new Vector3(0, (_root.sizeDelta.y - rectTrans.sizeDelta.y) / 2, 0);
+            startIndex = 1;
+        }
+        for (int i = startIndex; i < NodeList.Count; i++)
+        {
+            Debug.Log(NodeList[i].GetComponent<UITreeNode>()._node._fileName);
+            NodeList[i].transform.position = NodeList[0].transform.position - new Vector3(0, i * rectTrans.rect.height, 0);
         }
     }
 
-    public GameObject root;
-    public GameObject firstNode;
     private void Start()
     {
-        TreeNodes = new List<GameObject>();
-        Tree<Transform> tree = new Tree<Transform>(root.transform, 0);
-        firstNode.GetComponent<UITreeNode>().InitData(tree);
-        TreeNodes.Add(firstNode);
-        _prefab = Resources.Load<GameObject>("TestTree/Node");
+        _root = GetComponent<RectTransform>();
+        _prefab = transform.Find("Node").gameObject;
+        FileNode[] firstGrade = GetFile(Application.dataPath, 0);
+        for (int i = 0; i < firstGrade.Length; i++)
+        {
+            GameObject node = InitNode(transform, firstGrade[i], 0);
+            NodeList.Add(node);
+        }
+        ChangePosition();
+    }
+}
+
+public class FileNode
+{
+    public int _grade;
+    public string _fileName;
+    public string _filePath;
+    public bool _hasChild;
+    public FileNode[] _childNodes;
+
+    public FileNode(int grade, string fileName, string filePath, bool hasChild, FileNode[] childNodes = null)
+    {
+        _grade = grade;
+        _fileName = fileName;
+        _filePath = filePath;
+        _hasChild = hasChild;
+        _childNodes = childNodes;
     }
 }
