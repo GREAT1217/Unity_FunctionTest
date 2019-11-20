@@ -36,13 +36,13 @@ public class UIFirstLevel : MonoBehaviour
     void AddEvent(int index, Image button)
     {
         //第一种silder
-        UIEventTrigger.Add(button.gameObject).onPointerClick += () => MoveSlider(button);
+        UIEventTrigger.Add(button.gameObject).PointerClick += () => MoveSlider(button);
         //第二种slider
         //UIEventTrigger.Add(button.gameObject).onPointerDown = () => MaxSlider(index);
         //UIEventTrigger.Add(button.gameObject).onPointerUp = () => MinSlider(index);
         //UIEventTrigger.Add(button.gameObject).onPointerExit = () => MinSlider(_index);
         //panel
-        UIEventTrigger.Add(button.gameObject).onPointerClick += () => MovePanel(index, "Panel" + index);
+        UIEventTrigger.Add(button.gameObject).PointerClick += () => MovePanel(index, "Panel" + index);
 
         //button.onClick.AddListener(() => MoveSlider(button));
         //button.onClick.AddListener(() => MovePanel(index, "Panel" + index));

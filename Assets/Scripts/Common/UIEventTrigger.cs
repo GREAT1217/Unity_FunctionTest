@@ -2,16 +2,16 @@
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
-public class UIEventTrigger : MonoBehaviour ,IPointerClickHandler,IPointerEnterHandler,IPointerExitHandler,IPointerDownHandler,IPointerUpHandler
+public class UIEventTrigger :EventTrigger
 {
-    public UnityAction onPointerClick;
-    public UnityAction onPointerEnter;
-    public UnityAction onPointerExit;
-    public UnityAction onPointerDown;
-    public UnityAction onPointerUp;
-    public UnityAction onBeginDrag;
-    public UnityAction onDrag;
-    public UnityAction onEndDrag;
+    public UnityAction PointerClick;
+    public UnityAction PointerEnter;
+    public UnityAction PointerExit;
+    public UnityAction PointerDown;
+    public UnityAction PointerUp;
+    public UnityAction BeginDrag;
+    public UnityAction Drag;
+    public UnityAction EndDrag;
 
     private static UIEventTrigger trigger;
 
@@ -21,29 +21,43 @@ public class UIEventTrigger : MonoBehaviour ,IPointerClickHandler,IPointerEnterH
         if (trigger == null) trigger = go.AddComponent<UIEventTrigger>();
         return trigger;
     }
-    public void OnPointerClick(PointerEventData eventData)
+    public override void OnPointerClick(PointerEventData eventData)
     {
-        if (onPointerClick != null) onPointerClick();
+        if (PointerClick != null) PointerClick();
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
+    public override void OnPointerEnter(PointerEventData eventData)
     {
-        if (onPointerEnter != null) onPointerEnter();
+        if (PointerEnter != null) PointerEnter();
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    public override void OnPointerExit(PointerEventData eventData)
     {
-        if (onPointerExit != null) onPointerExit();
+        if (PointerExit != null) PointerExit();
     }
 
-    public void OnPointerDown(PointerEventData eventData)
+    public override void OnPointerDown(PointerEventData eventData)
     {
-        if (onPointerDown != null) onPointerDown();
+        if (PointerDown != null) PointerDown();
     }
 
-    public void OnPointerUp(PointerEventData eventData)
+    public override void OnPointerUp(PointerEventData eventData)
     {
-        if (onPointerUp != null) onPointerUp();
+        if (PointerUp != null) PointerUp();
     }
 
+    public override void OnBeginDrag(PointerEventData eventData)
+    {
+        if (BeginDrag != null) BeginDrag();
+    }
+
+    public override void OnDrag(PointerEventData eventData)
+    {
+        if (Drag != null) Drag();
+    }
+
+    public override void OnEndDrag(PointerEventData eventData)
+    {
+        if (EndDrag != null) EndDrag();
+    }
 }

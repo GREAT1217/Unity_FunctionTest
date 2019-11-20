@@ -1,0 +1,32 @@
+fileFormatVersion: 2
+guid: f05c986e4fae823459b38ed58eb0cbf6
+timeCreated: 1574236671
+licenseType: Pro
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - _uiAlpha: {instanceID: 0}
+  - _textTitle: {instanceID: 0}
+  - _btnClose: {instanceID: 0}
+  - _videoGraphic: {instanceID: 0}
+  - _videoPlayer: {instanceID: 0}
+  - _audioPlayer: {instanceID: 0}
+  - _barAlpha: {instanceID: 0}
+  - _btnVideo: {instanceID: 0}
+  - _spPause: {fileID: 21300000, guid: 2cf92a5579d10fb4c95e9dc2a11701d3, type: 3}
+  - _spPlay: {fileID: 21300000, guid: 149abe0bf76887a478bae97cd3c4f2c4, type: 3}
+  - _sliderProcess: {instanceID: 0}
+  - _btnAudio: {instanceID: 0}
+  - _spMute: {fileID: 21300000, guid: e206551d3feea744f8e399ad1f256f0c, type: 3}
+  - _spUnMute: {fileID: 21300000, guid: 8d59ab64db1d1e44da96215fc4ce60fb, type: 3}
+  - _sliderVolume: {instanceID: 0}
+  - _textDuration: {instanceID: 0}
+  - _textTime: {instanceID: 0}
+  - _btnZoom: {instanceID: 0}
+  - _spMax: {fileID: 21300000, guid: 499c18f48a2323147a548053b500751e, type: 3}
+  - _spMin: {fileID: 21300000, guid: 209da69fa624013469e3b1bc54fcc9dc, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
