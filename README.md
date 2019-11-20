@@ -1,10 +1,9 @@
 # UGUI
-Unity3D+C#
 
-## ³¡¾°ÃûËµÃ÷£º
-     1.TestTween=>DoTween²âÊÔ
-     2.TestShowModel=>Ä£ÐÍÕ¹Ê¾²âÊÔ
-     3.TestSideBar=>²à±ß¹¤¾ßÀ¸²âÊÔ
-     4.TestGraph=>Í¼±í²âÊÔ
-     5.TestLoopScrollRect=>Ñ­»·»¬¶¯¿ò²âÊÔ
-     6.TestGuide=>ÐÂÊÖÒýµ¼²âÊÔ
+## åœºæ™¯åè¯´æ˜Žï¼š
+     1.TestTween=>DoTweenæµ‹è¯•
+     2.TestShowModel=>æ¨¡åž‹å±•ç¤ºæµ‹è¯•
+     3.TestSideBar=>ä¾§è¾¹å·¥å…·æ æµ‹è¯•
+     4.TestGraph=>å›¾è¡¨æµ‹è¯•
+     5.TestLoopScrollRect=>å¾ªçŽ¯æ»‘åŠ¨æ¡†æµ‹è¯•
+     6.TestGuide=>æ–°æ‰‹å¼•å¯¼æµ‹è¯•
