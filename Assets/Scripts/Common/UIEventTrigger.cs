@@ -15,10 +15,10 @@ public class UIEventTrigger :EventTrigger
 
     private static UIEventTrigger trigger;
 
-    public static UIEventTrigger Add(GameObject go)
+    public static UIEventTrigger Add(Component obj)
     {
-        trigger = go.GetComponent<UIEventTrigger>();
-        if (trigger == null) trigger = go.AddComponent<UIEventTrigger>();
+        trigger = obj.GetComponent<UIEventTrigger>();
+        if (trigger == null) trigger = obj.gameObject.AddComponent<UIEventTrigger>();
         return trigger;
     }
     public override void OnPointerClick(PointerEventData eventData)
