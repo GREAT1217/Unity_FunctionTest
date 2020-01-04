@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class ObjectPool : MonoSingleton<ObjectPool>
@@ -102,6 +101,22 @@ public class ObjectPool : MonoSingleton<ObjectPool>
         {
             ObjectDict.Add(obj.name, new List<GameObject>() { obj });
         }
+    }
+
+    /// <summary>
+    /// 删除对象池
+    /// </summary>
+    /// <param name="poolName"></param>
+    public void DestoryPool(string poolName)
+    {
+        if (!_objectDict.ContainsKey(poolName)) return;
+        List<GameObject> objs = _objectDict[poolName];
+        for (int i = 0; i < objs.Count;)
+        {
+            Destroy(objs[i]);
+            objs.RemoveAt(i);
+        }
+        _objectDict.Remove(poolName);
     }
 
 }

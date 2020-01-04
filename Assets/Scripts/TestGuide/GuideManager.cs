@@ -1,8 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.AI;
 using UnityEngine.UI;
 
 public interface IUIGuide
@@ -40,7 +38,7 @@ public class GuideManager : MonoBehaviour
     public GuideUIRect _rectUIGuide;//矩形UI引导
     public RectTransform _guideArrow;//引导箭头
     public Text _guideText;//引导文本
-    public LineRenderer _guideLine;//引导线
+    public GuidePathLine _guideLine;//引导线
     public Transform _player;//引导对象
     [HideInInspector]
     public List<IGuideData> _guideDatas;//引导数据列表
@@ -54,9 +52,7 @@ public class GuideManager : MonoBehaviour
     private string _curMouseDir;//当前引导鼠标移动方向
     private GameObject _curGuideObj;//当前引导对象
     private Button _curGuideBtn;//当前引导按钮对象
-    private TriggerHandler _tempTrigger;//临时触发检测组件
-    private NavMeshAgent _curNavAgent;//当前引导寻路对象
-    private NavMeshPath _tempNavPath;//临时引导路径
+    private GuideTrigger _tempTrigger;//临时触发检测组件
     private float _curGuideTimer = -1;//当前引导计时
     private float _tempTimer = 0;//临时计时数据
     private RaycastHit _hit;//
@@ -64,9 +60,7 @@ public class GuideManager : MonoBehaviour
 
     void Start()
     {
-        _tempTrigger = _player.gameObject.AddComponent<TriggerHandler>();//不需要触发检测不加
-        _curNavAgent = _player.GetComponent<NavMeshAgent>();
-        _tempNavPath = new NavMeshPath();
+        _tempTrigger = _player.gameObject.AddComponent<GuideTrigger>();//不需要触发检测不加
         InitGuideData();
         if (_guideDatas != null) StartGuide(0);//开始引导
     }
@@ -89,6 +83,11 @@ public class GuideManager : MonoBehaviour
     {
         switch (_curGuideType)
         {
+            //case EGuideType.None:
+            //case EGuideType.Path:
+            //case EGuideType.UI:
+            //case EGuideType.EventListen:
+            //    break;
             case EGuideType.InputDown:
                 JudgeKey();
                 break;
@@ -100,9 +99,6 @@ public class GuideManager : MonoBehaviour
                 break;
             case EGuideType.MouseWheel:
                 JudgeMouseWheel();
-                break;
-            case EGuideType.Path:
-                DrawLine();
                 break;
             case EGuideType.Timer:
                 JudgeTimer();
@@ -124,7 +120,7 @@ public class GuideManager : MonoBehaviour
                 SetKeyGuide(((GuideIDown)guide).gInput, guide.GInfo);
                 break;
             case EGuideType.Path:
-                SetTriggerGuide(((GuidePath)guide).gPath, guide.GInfo);
+                SetPathGuide(((GuidePath)guide).gPath, guide.GInfo);
                 break;
             case EGuideType.MouseDrag:
                 GuideMDrag drag = (GuideMDrag)guide;
@@ -200,35 +196,27 @@ public class GuideManager : MonoBehaviour
     /// </summary>
     /// <param name="objPath"></param>
     /// <param name="info"></param>
-    private void SetTriggerGuide(string objPath, string info)
+    private void SetPathGuide(string objPath, string info)
     {
         ShowTip(info);
         _curGuideObj = GameObject.Find(objPath);
         _curGuideType = EGuideType.Path;
-        _tempTrigger.TriggerEnter = JudgeTrigger;
-    }
-    /// <summary>
-    /// 提示路径
-    /// </summary>
-    private void DrawLine()
-    {
-        if (_curGuideObj != null && _curMouseKey == -1)
+        _tempTrigger.TriggerEnter = EndPathGuide;//使用触发检测终点
+        if (_curGuideObj != null )
         {
-            if (!_curGuideObj.activeInHierarchy) _curGuideObj.gameObject.SetActive(true);
-            _curGuideObj.GetComponent<MeshRenderer>().enabled = true;
-            bool canNav = _curNavAgent.CalculatePath(_curGuideObj.transform.position, _tempNavPath);
-            if (canNav)
+            if (!_curGuideObj.activeInHierarchy)
             {
-                _guideLine.positionCount = _tempNavPath.corners.Length;
-                _guideLine.SetPositions(_tempNavPath.corners);
+                _curGuideObj.gameObject.SetActive(true);
             }
+            _curGuideObj.GetComponent<MeshRenderer>().enabled = true;
+            _guideLine.ShowLine(_player.gameObject, _curGuideObj);
         }
     }
     /// <summary>
     /// 检查触发终点
     /// </summary>
     /// <param name="other"></param>
-    private void JudgeTrigger(Collider other)
+    private void EndPathGuide(Collider other)
     {
         if (_curGuideObj == null) return;
         string name = _curGuideObj.name;
@@ -236,7 +224,7 @@ public class GuideManager : MonoBehaviour
         {
             _curGuideType = EGuideType.None;
             _curGuideObj = null;
-            _guideLine.positionCount = 0;
+            _guideLine.HideLine();
             _tempTrigger.TriggerEnter = null;
             EndGuide();
         }
@@ -605,31 +593,4 @@ public class GuideManager : MonoBehaviour
         trans.localScale = targetScale;
     }
     #endregion
-}
-
-/// <summary>
-/// 触发检测组件
-/// </summary>
-public class TriggerHandler : MonoBehaviour
-{
-    public UnityAction<Collider> TriggerEnter;
-    public UnityAction<Collider, float> TriggerStay;
-
-    private float _tempTime;
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (TriggerEnter != null) TriggerEnter(other);
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        _tempTime += Time.deltaTime;
-        if (TriggerStay != null) TriggerStay(other, _tempTime);
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        _tempTime = 0;
-    }
 }
