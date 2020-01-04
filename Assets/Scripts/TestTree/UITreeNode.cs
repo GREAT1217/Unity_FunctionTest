@@ -11,16 +11,32 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
     public UnityAction SingleClick;
     public UnityAction DoubleClick;
 
+    private UITreeManager _mgr;
+    private bool _isExpand;//是否展开
     public Button _button;//收纳按钮
     public Text _content;//当前节点名
     public FileNode _node;//当前节点
     public float _clickInterval = 0.2f;//双击时间间隔
 
-    private GameObject[] _subObjs;//子对象
+    private UITreeNode[] _subObjs;//子对象
     private float _time1, _time2;
 
-    public void InitData(FileNode node)
+    public bool IsExpand
     {
+        get
+        {
+            return _isExpand;
+        }
+        set
+        {
+            _isExpand = value;
+            _button.transform.localEulerAngles = Vector3.forward * (value ? -90 : 0);
+        }
+    }
+
+    public void InitData(FileNode node, UITreeManager mgr)
+    {
+        _mgr = mgr;
         _node = node;
         InitUI();
     }
@@ -30,6 +46,7 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
     /// </summary>
     private void InitUI()
     {
+        //设置按钮和内容位置
         _button.transform.localPosition = Vector3.right * (_node._grade * 20 - 100);
         _content.transform.localPosition = Vector3.right * (_node._grade * 20);
         _content.text = _node._fileName;
@@ -41,13 +58,16 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
     {
         if (_button.transform.localEulerAngles.z == 0)//收纳状态
         {
-            _button.transform.localEulerAngles = Vector3.forward * -90;
             ShowSubObjs();
+            _mgr.InsertRange(this, _subObjs);
+            IsExpand = true;
         }
         else
         {
-            _button.transform.localRotation = Quaternion.identity;
-            HideSubObjs();
+            int length = 0;
+            HideSubObjs(this, ref length);
+            _mgr.RemoveRange(this, length);
+            IsExpand = false;
         }
     }
 
@@ -57,32 +77,33 @@ public class UITreeNode : MonoBehaviour, IPointerClickHandler
         {
             for (int i = 0; i < _subObjs.Length; i++)
             {
-                _subObjs[i].SetActive(true);
+                _subObjs[i].gameObject.SetActive(true);
             }
         }
         else
         {
-            _node._childNodes = UITreeManager.GetFile(_node._filePath, _node._grade + 1);
-            _subObjs = new GameObject[_node._childNodes.Length];
-            int space = -20;
+            _node._childNodes = _mgr.GetFile(_node._filePath, _node._grade + 1);
+            _subObjs = new UITreeNode[_node._childNodes.Length];
             for (int i = 0; i < _subObjs.Length; i++)
             {
-                _subObjs[i] = UITreeManager.InitNode(transform, _node._childNodes[i], space);
-                space -= 20;
+                //_subObjs[i] = _mgr.InitNode(_mgr._root, _node._childNodes[i]);//设置在根目录
+                _subObjs[i] = _mgr.InitNode(transform, _node._childNodes[i]);
             }
         }
-        //加入列表
-        UITreeManager.InsertRange(gameObject, _subObjs);
     }
 
-    private void HideSubObjs()
+    private void HideSubObjs(UITreeNode node, ref int length)
     {
-        for (int i = 0; i < _subObjs.Length; i++)
+        length += node._subObjs.Length;
+        for (int i = 0; i < node._subObjs.Length; i++)
         {
-            _subObjs[i].SetActive(false);
+            node._subObjs[i].gameObject.SetActive(false);
+            if (node._subObjs[i].IsExpand)
+            {
+                node._subObjs[i].IsExpand = false;
+                HideSubObjs(node._subObjs[i], ref length);
+            }
         }
-        //移除列表
-        UITreeManager.RemoveRange(gameObject, _subObjs.Length);
     }
 
     public void OnPointerClick(PointerEventData eventData)

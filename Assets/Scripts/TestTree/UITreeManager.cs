@@ -1,23 +1,23 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UITreeManager : MonoBehaviour
 {
-    private static RectTransform _root;
-    private static GameObject _prefab;
-    private static List<GameObject> _nodeList;//当前显示的节点
-
-    public static List<GameObject> NodeList
+    public RectTransform _root;
+    public GameObject _prefab;
+    private List<UITreeNode> _nodeList;//当前显示的节点
+    public List<UITreeNode> NodeList
     {
         get
         {
-            if (_nodeList == null) _nodeList = new List<GameObject>();
+            if (_nodeList == null) _nodeList = new List<UITreeNode>();
             return _nodeList;
         }
     }
 
-    public static FileNode[] GetFile(string path, int grade)
+    public FileNode[] GetFile(string path, int grade)
     {
         if (Directory.Exists(path))
         {
@@ -39,52 +39,53 @@ public class UITreeManager : MonoBehaviour
         return null;
     }
 
-    public static GameObject InitNode(Transform parent, FileNode node, int space)
+    public UITreeNode InitNode(Transform parent, FileNode node)
     {
         GameObject obj = Instantiate(_prefab, parent);
-        obj.transform.localPosition = Vector2.up * space;
-        obj.GetComponent<UITreeNode>().InitData(node);
+        //obj.transform.localPosition = Vector2.up * space;
+        UITreeNode treeNode = obj.GetComponent<UITreeNode>();
+        treeNode.InitData(node, this);
         obj.SetActive(true);
-        return obj;
+        return treeNode;
     }
 
-    public static void InsertRange(GameObject obj, GameObject[] subObjs)
+    public void InsertRange(UITreeNode obj, UITreeNode[] subObjs)
     {
         int index = NodeList.IndexOf(obj) + 1;
         NodeList.InsertRange(index, subObjs);
         ChangePosition(index);
     }
 
-    public static void RemoveRange(GameObject obj, int count)
+    public void RemoveRange(UITreeNode obj, int count)
     {
+        //Debug.Log(count);
         int index = NodeList.IndexOf(obj) + 1;
         NodeList.RemoveRange(index, count);
         ChangePosition(index);
     }
 
-    private static void ChangePosition(int startIndex = 0)
+    private void ChangePosition(int startIndex = 0)
     {
         RectTransform rectTrans = _prefab.GetComponent<RectTransform>();
         if (startIndex == 0)
         {
-            NodeList[0].transform.position = new Vector3(0, (_root.sizeDelta.y - rectTrans.sizeDelta.y) / 2, 0);
+            NodeList[0].transform.localPosition = new Vector3(0, (_root.sizeDelta.y - rectTrans.sizeDelta.y) / 2, 0);
             startIndex = 1;
         }
         for (int i = startIndex; i < NodeList.Count; i++)
         {
-            Debug.Log(NodeList[i].GetComponent<UITreeNode>()._node._fileName);
+            //Debug.Log(NodeList[i].GetComponent<UITreeNode>()._node._fileName);
+            //NodeList[i].transform.localPosition = NodeList[0].transform.localPosition - new Vector3(0, i * rectTrans.rect.height, 0);//设置在根目录
             NodeList[i].transform.position = NodeList[0].transform.position - new Vector3(0, i * rectTrans.rect.height, 0);
         }
     }
 
     private void Start()
     {
-        _root = GetComponent<RectTransform>();
-        _prefab = transform.Find("Node").gameObject;
         FileNode[] firstGrade = GetFile(Application.dataPath, 0);
         for (int i = 0; i < firstGrade.Length; i++)
         {
-            GameObject node = InitNode(transform, firstGrade[i], 0);
+            UITreeNode node = InitNode(transform, firstGrade[i]);
             NodeList.Add(node);
         }
         ChangePosition();
