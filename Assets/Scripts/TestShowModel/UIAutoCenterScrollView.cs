@@ -1,24 +1,30 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class test : MonoBehaviour, IDragHandler, IEndDragHandler
+public enum UIDir
+{
+    Horizontal,
+    Vertical
+}
+
+public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandler
 {
     public UIDir _scrollDir;
-    public Image _itemPrefab;
+    public UIAutoCenterItem _itemPrefab;
     public int _itemSpacing;//间隔
     public Vector3 _centerScale = Vector3.one * 1.2f;//中心放大
 
     private ScrollRect _scrollRect;
     private int _itemCount;
-    private Image[] _items;
-    private int _centerIndex;
+    private UIAutoCenterItem[] _items;
+    private int _centerIndex = -1;
 
     void Start()
     {
         InitLayout();
         InitItem(5);
-        SetNearstItem();
+        SetCenterItem(0);
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -29,26 +35,28 @@ public class test : MonoBehaviour, IDragHandler, IEndDragHandler
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (_scrollDir == UIDir.Horizontal)
-        {
-            _scrollRect.horizontalNormalizedPosition = (float)_centerIndex / (_itemCount - 1);
-        }
-        else
-        {
-            _scrollRect.verticalNormalizedPosition = (float)(_itemCount - 1 - _centerIndex) / (_itemCount - 1);
-        }
+        SetContent();
         //centerIndex显示回调 
     }
 
     public void InitItem(int count)
     {
         _itemCount = count;
-        _items = new Image[count];
+        _items = new UIAutoCenterItem[count];
         for (int i = 0; i < count; i++)
         {
             _items[i] = Instantiate(_itemPrefab, _scrollRect.content);
-            _items[i].GetComponentInChildren<Text>().text = (i + 1).ToString();
+            _items[i]._text.text = (i + 1).ToString();
+            _items[i].Init(i, this);
         }
+    }
+
+    public void SetCenterItem(int index)
+    {
+        if (index == _centerIndex) return;
+        _centerIndex = index;
+        SetNearstItem();
+        SetContent();
     }
 
     void InitLayout()
@@ -58,14 +66,16 @@ public class test : MonoBehaviour, IDragHandler, IEndDragHandler
         if (_scrollDir == UIDir.Horizontal)
         {
             layout = _scrollRect.content.gameObject.AddComponent<HorizontalLayoutGroup>();
-            float margin = (_scrollRect.viewport.rect.width - _itemPrefab.rectTransform.rect.width) / 2;
+            RectTransform rectTrans = _itemPrefab.GetComponent<RectTransform>();
+            float margin = (_scrollRect.viewport.rect.width - rectTrans.rect.width) / 2;
             layout.padding.left = layout.padding.right = (int)margin;
             _scrollRect.content.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
         else
         {
             layout = _scrollRect.content.gameObject.AddComponent<VerticalLayoutGroup>();
-            float margin = (_scrollRect.viewport.rect.height - _itemPrefab.rectTransform.rect.height) / 2;
+            RectTransform rectTrans = _itemPrefab.GetComponent<RectTransform>();
+            float margin = (_scrollRect.viewport.rect.height - rectTrans.rect.height) / 2;
             layout.padding.top = layout.padding.bottom = (int)margin;
             _scrollRect.content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
@@ -109,4 +119,15 @@ public class test : MonoBehaviour, IDragHandler, IEndDragHandler
         }
     }
 
+    void SetContent()
+    {
+        if (_scrollDir == UIDir.Horizontal)
+        {
+            _scrollRect.horizontalNormalizedPosition = (float)_centerIndex / (_itemCount - 1);
+        }
+        else
+        {
+            _scrollRect.verticalNormalizedPosition = (float)(_itemCount - 1 - _centerIndex) / (_itemCount - 1);
+        }
+    }
 }
