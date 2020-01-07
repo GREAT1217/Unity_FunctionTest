@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 
 public enum UIDir
 {
@@ -8,7 +9,7 @@ public enum UIDir
     Vertical
 }
 
-public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandler
+public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public UIDir _scrollDir;
     public UIAutoCenterItem _itemPrefab;
@@ -19,49 +20,14 @@ public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandl
     private int _itemCount;
     private UIAutoCenterItem[] _items;
     private int _centerIndex = -1;
+    private bool _posing;
+    private float _targetPos;
 
-    void Start()
-    {
-        InitLayout();
-        InitItem(5);
-        SetCenterItem(0);
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        CheckNearstIndex();
-        SetNearstItem();
-    }
-
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        SetContent();
-        //centerIndex显示回调 
-    }
-
-    public void InitItem(int count)
-    {
-        _itemCount = count;
-        _items = new UIAutoCenterItem[count];
-        for (int i = 0; i < count; i++)
-        {
-            _items[i] = Instantiate(_itemPrefab, _scrollRect.content);
-            _items[i]._text.text = (i + 1).ToString();
-            _items[i].Init(i, this);
-        }
-    }
-
-    public void SetCenterItem(int index)
-    {
-        if (index == _centerIndex) return;
-        _centerIndex = index;
-        SetNearstItem();
-        SetContent();
-    }
-
-    void InitLayout()
+    void Awake()
     {
         _scrollRect = GetComponent<ScrollRect>();
+        _scrollRect.horizontal = _scrollDir == UIDir.Horizontal ? true : false;
+        _scrollRect.vertical = _scrollDir == UIDir.Vertical ? true : false;
         HorizontalOrVerticalLayoutGroup layout;
         if (_scrollDir == UIDir.Horizontal)
         {
@@ -85,6 +51,70 @@ public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandl
         layout.childAlignment = TextAnchor.MiddleCenter;
     }
 
+    void Update()
+    {
+        if (_posing)
+        {
+            if (_scrollDir == UIDir.Horizontal)
+            {
+                _scrollRect.horizontalNormalizedPosition = Mathf.Lerp(_scrollRect.horizontalNormalizedPosition, _targetPos, _scrollRect.elasticity);
+                if (Mathf.Abs(_scrollRect.horizontalNormalizedPosition - _targetPos) < 0.005f)
+                {
+                    _scrollRect.horizontalNormalizedPosition = _targetPos;
+                    _posing = false;
+                }
+            }
+            else
+            {
+                _scrollRect.verticalNormalizedPosition = Mathf.Lerp(_scrollRect.verticalNormalizedPosition, _targetPos, _scrollRect.elasticity);
+                if (Mathf.Abs(_scrollRect.verticalNormalizedPosition - _targetPos) < 0.005f)
+                {
+                    _scrollRect.verticalNormalizedPosition = _targetPos;
+                    _posing = false;
+                }
+            }
+        }
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        _posing = false;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        CheckNearstIndex();
+        SetItemScale();
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        SetItemAndContent();
+    }
+
+    public void InitItem(UnityAction<UIAutoCenterItem, int> show, int count, int center = 0)
+    {
+        _itemCount = count;
+        _items = new UIAutoCenterItem[count];
+        for (int i = 0; i < count; i++)
+        {
+            Debug.Log(_itemPrefab.name);
+            Debug.Log(_scrollRect.name);
+            UIAutoCenterItem item = Instantiate(_itemPrefab, _scrollRect.content);
+            show(item, i);
+            _items[i] = item;
+        }
+        SetCenterItem(center);
+    }
+
+    public void SetCenterItem(int index)
+    {
+        if (index == _centerIndex) return;
+        _centerIndex = index;
+        SetItemScale();
+        SetItemAndContent();
+    }
+
     void CheckNearstIndex()
     {
         float pos = _scrollDir == UIDir.Horizontal ? _scrollRect.horizontalNormalizedPosition : _scrollRect.verticalNormalizedPosition;
@@ -103,9 +133,8 @@ public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandl
         _centerIndex = _scrollDir == UIDir.Horizontal ? index : _itemCount - 1 - index;
     }
 
-    void SetNearstItem()
+    void SetItemScale()
     {
-        Debug.Log(_centerIndex);
         for (int i = 0; i < _itemCount; i++)
         {
             if (_centerIndex == i)
@@ -119,15 +148,17 @@ public class UIAutoCenterScrollView : MonoBehaviour, IDragHandler, IEndDragHandl
         }
     }
 
-    void SetContent()
+    void SetItemAndContent()
     {
+        _items[_centerIndex].OnCenter();
+        _posing = true;
         if (_scrollDir == UIDir.Horizontal)
         {
-            _scrollRect.horizontalNormalizedPosition = (float)_centerIndex / (_itemCount - 1);
+            _targetPos = (float)_centerIndex / (_itemCount - 1);
         }
         else
         {
-            _scrollRect.verticalNormalizedPosition = (float)(_itemCount - 1 - _centerIndex) / (_itemCount - 1);
+            _targetPos = (float)(_itemCount - 1 - _centerIndex) / (_itemCount - 1);
         }
     }
 }
