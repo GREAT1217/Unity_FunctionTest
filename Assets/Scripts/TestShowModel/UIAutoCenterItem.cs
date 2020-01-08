@@ -21,6 +21,7 @@ public class UIAutoCenterItem : MonoBehaviour
         _text.text = text;
         _index = index;
         _scrollView = scrollView;
+        gameObject.SetActive(true);
     }
 
     public virtual void OnCenter()

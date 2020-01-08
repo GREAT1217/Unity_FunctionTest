@@ -9,12 +9,14 @@ public enum UIDir
     Vertical
 }
 
-public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IEndDragHandler
 {
     public UIDir _scrollDir;
     public UIAutoCenterItem _itemPrefab;
     public int _itemSpacing;//间隔
-    public Vector3 _centerScale = Vector3.one * 1.2f;//中心放大
+    public float _maxRate = 1.2f;
+    public float _minRate = 1f;
+    public float _adsorption = 0.005f;//吸附值
 
     private ScrollRect _scrollRect;
     private int _itemCount;
@@ -49,6 +51,7 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
         layout.childControlWidth = false;
         layout.spacing = _itemSpacing;
         layout.childAlignment = TextAnchor.MiddleCenter;
+        _scrollRect.onValueChanged.AddListener(ScrollView);
     }
 
     void Update()
@@ -58,7 +61,7 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
             if (_scrollDir == UIDir.Horizontal)
             {
                 _scrollRect.horizontalNormalizedPosition = Mathf.Lerp(_scrollRect.horizontalNormalizedPosition, _targetPos, _scrollRect.elasticity);
-                if (Mathf.Abs(_scrollRect.horizontalNormalizedPosition - _targetPos) < 0.005f)
+                if (Mathf.Abs(_scrollRect.horizontalNormalizedPosition - _targetPos) < _adsorption)
                 {
                     _scrollRect.horizontalNormalizedPosition = _targetPos;
                     _posing = false;
@@ -67,7 +70,7 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
             else
             {
                 _scrollRect.verticalNormalizedPosition = Mathf.Lerp(_scrollRect.verticalNormalizedPosition, _targetPos, _scrollRect.elasticity);
-                if (Mathf.Abs(_scrollRect.verticalNormalizedPosition - _targetPos) < 0.005f)
+                if (Mathf.Abs(_scrollRect.verticalNormalizedPosition - _targetPos) < _adsorption)
                 {
                     _scrollRect.verticalNormalizedPosition = _targetPos;
                     _posing = false;
@@ -81,15 +84,9 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
         _posing = false;
     }
 
-    public void OnDrag(PointerEventData eventData)
-    {
-        CheckNearstIndex();
-        SetItemScale();
-    }
-
     public void OnEndDrag(PointerEventData eventData)
     {
-        SetItemAndContent();
+        AutoCenter();
     }
 
     public void InitItem(UnityAction<UIAutoCenterItem, int> show, int count, int center = 0)
@@ -111,44 +108,10 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
     {
         if (index == _centerIndex) return;
         _centerIndex = index;
-        SetItemScale();
-        SetItemAndContent();
+        AutoCenter();
     }
 
-    void CheckNearstIndex()
-    {
-        float pos = _scrollDir == UIDir.Horizontal ? _scrollRect.horizontalNormalizedPosition : _scrollRect.verticalNormalizedPosition;
-        float nearstDis = Mathf.Abs(0 - pos);
-        int index = 0;
-        for (int i = 1; i < _itemCount; i++)
-        {
-            float tempPos = (float)i / (_itemCount - 1);
-            float tempDis = Mathf.Abs(tempPos - pos);
-            if (tempDis < nearstDis)
-            {
-                nearstDis = tempDis;
-                index = i;
-            }
-        }
-        _centerIndex = _scrollDir == UIDir.Horizontal ? index : _itemCount - 1 - index;
-    }
-
-    void SetItemScale()
-    {
-        for (int i = 0; i < _itemCount; i++)
-        {
-            if (_centerIndex == i)
-            {
-                _items[i].transform.localScale = _centerScale;
-            }
-            else
-            {
-                _items[i].transform.localScale = Vector3.one;
-            }
-        }
-    }
-
-    void SetItemAndContent()
+    void AutoCenter()
     {
         _items[_centerIndex].OnCenter();
         _posing = true;
@@ -160,5 +123,41 @@ public class UIAutoCenterScrollView : MonoBehaviour, IBeginDragHandler, IDragHan
         {
             _targetPos = (float)(_itemCount - 1 - _centerIndex) / (_itemCount - 1);
         }
+    }
+
+    void ScrollView(Vector2 scrollPos)
+    {
+        float pos = _scrollDir == UIDir.Horizontal ? scrollPos.x : scrollPos.y;
+        float nearstDis = 1;
+        int index = 0;
+        if (_scrollDir == UIDir.Horizontal)
+        {
+            for (int i = 0; i < _itemCount; i++)
+            {
+                float tempPos = (float)i / (_itemCount - 1);
+                float tempDis = Mathf.Abs(tempPos - pos);
+                _items[i].transform.localScale = Vector3.one * Mathf.Clamp(_maxRate * (1 - tempDis), _minRate, _maxRate);
+                if (tempDis < nearstDis)
+                {
+                    nearstDis = tempDis;
+                    index = i;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < _itemCount; i++)
+            {
+                float tempPos = (float)i / (_itemCount - 1);
+                float tempDis = Mathf.Abs(tempPos - pos);
+                _items[_itemCount - 1 - i].transform.localScale = Vector3.one * Mathf.Clamp(_maxRate * (1 - tempDis), _minRate, _maxRate);
+                if (tempDis < nearstDis)
+                {
+                    nearstDis = tempDis;
+                    index = _itemCount - 1 - i;
+                }
+            }
+        }
+        _centerIndex = index;
     }
 }
