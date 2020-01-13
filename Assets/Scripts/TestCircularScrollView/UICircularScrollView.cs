@@ -1,82 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
-
-public enum Direction
-{
-    Horizontal,
-    Vertical
-}
 
 public class UICircularScrollView : MonoBehaviour
 {
-    public Direction _dir;
+    public UIDir _dir;
     public int _crNum = 1;//行或列
     public float _spacing = 5f;//间隔
     public GameObject _cell;
 
+    protected const string CELLPOOL = "CellPool";
+    protected ScrollRect _scrollRect;
     protected RectTransform _rectTrans;
     protected RectTransform _content;
     protected float _contentWight;
     protected float _contentHeight;
     protected float _cellWight;
     protected float _cellHeight;
-
-    protected bool _isInited;//
-
+    /// <summary>
+    /// 子元素数据
+    /// </summary>
     protected struct CellInfo
     {
         public Vector3 pos;
         public GameObject obj;
     }
     protected CellInfo[] _cellInfos;
-    protected ScrollRect _scrollRect;
-    protected int _maxCount;
-    protected int _headIndex;//首index
-    protected int _tailIndex;//尾index
-    protected bool _clearList;
+    protected int _curCount = -1;//当前初始化时Cell最大数量
+    protected bool _isInited;//记录首次初始化
+    protected bool _clearList;//重新初始化时是否清理Cell数据
+    protected UnityAction<GameObject, int> OnCellShow;//Cell显示回调
 
-    protected Action<GameObject, int> ShowCallback;//元素显示回调
-    protected Action<GameObject, int> ClickCallback;//元素点击回调
-    protected Action<int, bool, GameObject> OnButtonClickCallback;
-    protected Stack<GameObject> poolsObj = new Stack<GameObject>();
-
-    void Start()
-    {
-        Init(NormalCallBack);
-        ShowList(50);
-    }
-
-    void Update()
-    {
-
-    }
-
-    private void NormalCallBack(GameObject cell, int index)
-    {
-        cell.transform.Find("Text").GetComponent<Text>().text = index.ToString();
-    }
-
-    public virtual void Init(Action<GameObject, int> showCallback)
-    {
-        Init(showCallback, null);
-    }
-
-    public virtual void Init(Action<GameObject, int> showCallBack, Action<GameObject, int> clickCallback)
+    /// <summary>
+    /// 初始化子元素显示回调函数
+    /// </summary>
+    /// <param name="onCellShow"></param>
+    public virtual void Init(UnityAction<GameObject, int> onCellShow)
     {
         //cell
         if (_cell == null)
         {
-            Debug.LogError("无元素");
+            Debug.LogError("没有子元素");
             return;
         }
-        SetPoolsObj(_cell);
         RectTransform cellRectTrans = _cell.GetComponent<RectTransform>();
-        cellRectTrans.pivot = Vector2.up;
         SetTopLeftAnchor(cellRectTrans);
         _cellHeight = cellRectTrans.rect.height;
         _cellWight = cellRectTrans.rect.width;
+        ObjectPool.Instance.SetPrefab(CELLPOOL, _cell);
+        ObjectPool.Instance.RecycleObj(CELLPOOL, _cell);
         //scrollRect
         _scrollRect = GetComponent<ScrollRect>();
         //content
@@ -88,24 +61,75 @@ public class UICircularScrollView : MonoBehaviour
         //event
         _scrollRect.onValueChanged.RemoveAllListeners();
         _scrollRect.onValueChanged.AddListener(ScrollRectListener);
-        ShowCallback = showCallBack;
-        ClickCallback = clickCallback;
+        OnCellShow = onCellShow;
     }
 
-    public virtual void Init(Action<GameObject, int> callback, Action<GameObject, int> onClickCallback, Action<int, bool, GameObject> onButtonClickCallback)
-    {
-        if (onButtonClickCallback != null)
-        {
-            OnButtonClickCallback = onButtonClickCallback;
-        }
-        Init(callback, onClickCallback);
-    }
-
+    /// <summary>
+    /// 显示列表
+    /// </summary>
+    /// <param name="count"></param>
     public virtual void ShowList(int count)
     {
-        _headIndex = _tailIndex = -1;
-        //计算content尺寸
-        if (_dir == Direction.Vertical)
+        SetContentSize(count);
+        int lastCount = RecycleCellInfos(count);//上次初始化的cell数量
+        CellInfo[] oldCellInfos = _cellInfos;//记录上次初始化的cell
+        _cellInfos = new CellInfo[count];//记录本次初始化的cell
+        for (int i = 0; i < count; i++)
+        {
+            CellInfo cellInfo;
+            if (_curCount != -1 && i < lastCount)//如果初始化过，复用原来的cell数据存储
+            {
+                cellInfo = oldCellInfos[i];
+            }
+            else//第一次初始化或原来的cell数据的不够
+            {
+                cellInfo = new CellInfo();
+                SetCellPos(ref cellInfo, i);
+            }
+            if (SetCellState(ref cellInfo))
+            {
+                OnCellShow(cellInfo.obj, i);//cell显示回调
+            }
+            _cellInfos[i] = cellInfo;
+        }
+        _curCount = count;
+        _isInited = true;
+    }
+
+    /// <summary>
+    /// 监听滑动区域
+    /// </summary>
+    /// <param name="value"></param>
+    protected virtual void ScrollRectListener(Vector2 value)
+    {
+        if (_cellInfos == null) return;
+        for (int i = 0; i < _cellInfos.Length; i++)
+        {
+            if (SetCellState(ref _cellInfos[i]))
+            {
+                OnCellShow(_cellInfos[i].obj, i);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 设置RectTransform左上角锚点
+    /// </summary>
+    /// <param name="rectTrans"></param>
+    protected void SetTopLeftAnchor(RectTransform rectTrans)
+    {
+        rectTrans.pivot = Vector2.up;
+        rectTrans.anchorMin = Vector2.up;
+        rectTrans.anchorMax = Vector2.up;
+    }
+
+    /// <summary>
+    /// 设置Content尺寸
+    /// </summary>
+    /// <param name="count"></param>
+    protected void SetContentSize(int count)
+    {
+        if (_dir == UIDir.Vertical)
         {
             float contentSize = (_spacing + _cellHeight) * Mathf.CeilToInt((float)count / _crNum);
             _contentHeight = contentSize;
@@ -121,151 +145,90 @@ public class UICircularScrollView : MonoBehaviour
             contentSize = Mathf.Max(contentSize, _rectTrans.rect.width);
             _content.sizeDelta = new Vector2(contentSize, _contentHeight);
         }
-        //已经生成过的结束索引
-        int lastEndIndex = 0;
-        //如果已经初始化过，过多cell的保存对象池
-        if (_isInited)
-        {
-            lastEndIndex = Mathf.Max(count, _maxCount);
-            lastEndIndex = _clearList ? 0 : lastEndIndex;
-            int cellCount = _clearList ? _cellInfos.Length : _maxCount;
-            for (int i = lastEndIndex; i < cellCount; i++)
-            {
-                if (_cellInfos[i].obj != null)
-                {
-                    SetPoolsObj(_cellInfos[i].obj);
-                    _cellInfos[i].obj = null;
-                }
-            }
-        }
-        //生成并记录元素
-        CellInfo[] oldCellInfos = _cellInfos;//记录原来的元素
-        _cellInfos = new CellInfo[count];
-        for (int i = 0; i < count; i++)
-        {
-            if (_maxCount != -1 && i < lastEndIndex)//如果原来已生成过
-            {
-                Debug.Log("olddddd");
-                CellInfo newCellInfo = oldCellInfos[i];
-                float cellPos = _dir == Direction.Vertical ? newCellInfo.pos.y : newCellInfo.pos.x;
-                if (!IsOutRange(cellPos))
-                {
-                    _headIndex = _headIndex == -1 ? i : _headIndex;
-                    _tailIndex = i;
-                    if (newCellInfo.obj == null)
-                    {
-                        newCellInfo.obj = GetPoolsObj();
-                    }
-                    newCellInfo.obj.GetComponent<RectTransform>().anchoredPosition = newCellInfo.pos;
-                    newCellInfo.obj.name = i.ToString();
-                    newCellInfo.obj.SetActive(true);
-                    ShowCallback(newCellInfo.obj, i);
-                }
-                else
-                {
-                    SetPoolsObj(newCellInfo.obj);
-                    newCellInfo.obj = null;
-                }
-                _cellInfos[i] = newCellInfo;
-            }
-            else//第一次生成或原来生成的不够
-            {
-                CellInfo cellInfo = new CellInfo();
-                //计算每个cell的坐标
-                if (_dir == Direction.Vertical)
-                {
-                    float posY = -(_cellHeight * Mathf.FloorToInt(i / _crNum) + _spacing * Mathf.FloorToInt(i / _crNum));
-                    float posX = _cellWight * (i % _crNum) + _spacing * (i % _crNum);
-                    cellInfo.pos = new Vector3(posX, posY, 0);
-                }
-                else
-                {
-                    float posX = _cellWight * Mathf.FloorToInt(i / _crNum) + _spacing * Mathf.FloorToInt(i / _crNum);
-                    float PosY = -(_cellHeight * (i % _crNum) + _spacing * (i % _crNum));
-                    cellInfo.pos = new Vector3(posX, PosY, 0);
-                }
-                //计算是否超出范围，显示或隐藏
-                float cellPos = _dir == Direction.Vertical ? cellInfo.pos.y : cellInfo.pos.x;
-                if (IsOutRange(cellPos))
-                {
-                    cellInfo.obj = null;
-                }
-                else
-                {
-                    GameObject cell = GetPoolsObj();
-                    cell.GetComponent<RectTransform>().anchoredPosition = cellInfo.pos;
-                    cell.gameObject.name = i.ToString();
-                    cellInfo.obj = cell;
-                    //记录显示范围的首尾index
-                    _headIndex = _headIndex == -1 ? i : _headIndex;
-                    _tailIndex = i;
-                    //回调
-                    ShowCallback(cell, i);
-                }
-                _cellInfos[i] = cellInfo;
-            }
-        }
-        _maxCount = count;
-        _isInited = true;
-    }
-
-    protected virtual void ScrollRectListener(Vector2 value)
-    {
-        UpdateCheck();
     }
 
     /// <summary>
-    /// 设置左上角锚点
+    /// 回收CellInfos
     /// </summary>
-    /// <param name="rectTrans"></param>
-    protected void SetTopLeftAnchor(RectTransform rectTrans)
+    /// <returns></returns>
+    protected int RecycleCellInfos(int count)
     {
-        rectTrans.anchorMin = new Vector2(0, 1);
-        rectTrans.anchorMax = new Vector2(0, 1);
-    }
-
-    /// <summary>
-    /// 实时检测
-    /// 检测显示隐藏
-    /// </summary>
-    protected void UpdateCheck()
-    {
-        if (_cellInfos == null) return;
-        Debug.Log(_cellInfos.Length);
-        for (int i = 0; i < _cellInfos.Length; i++)
+        if (!_isInited) return 0;
+        if (count > _curCount) return _curCount;
+        int overIndex = Mathf.Min(count, _curCount);//如果上次的多了，将多出来的回收；如果上次的不足，不需要回收
+        overIndex = _clearList ? 0 : overIndex;//如果要全清，从0开始，否则只回收多余的
+        for (int i = overIndex; i < _curCount; i++)
         {
-            CellInfo cell = _cellInfos[i];
-            GameObject obj = cell.obj;
-            Vector3 pos = cell.pos;
-            float cellPos = _dir == Direction.Vertical ? pos.y : pos.x;
-            if (IsOutRange(cellPos))
+            if (_cellInfos[i].obj != null)
             {
-                SetPoolsObj(obj);
+                Debug.Log("回收");
+                ObjectPool.Instance.RecycleObj(CELLPOOL, _cellInfos[i].obj);
                 _cellInfos[i].obj = null;
             }
-            else
+        }
+        return overIndex;
+    }
+
+    /// <summary>
+    /// 设置Cell位置信息
+    /// </summary>
+    /// <param name="cellInfo"></param>
+    /// <param name="index"></param>
+    protected void SetCellPos(ref CellInfo cellInfo, int index)
+    {
+        if (_dir == UIDir.Vertical)
+        {
+            float posY = -(_cellHeight * Mathf.CeilToInt(index / _crNum) + _spacing * Mathf.CeilToInt(index / _crNum));
+            float posX = _cellWight * (index % _crNum) + _spacing * (index % _crNum);
+            cellInfo.pos = new Vector3(posX, posY, 0);
+        }
+        else
+        {
+            float posX = _cellWight * Mathf.CeilToInt(index / _crNum) + _spacing * Mathf.CeilToInt(index / _crNum);
+            float PosY = -(_cellHeight * (index % _crNum) + _spacing * (index % _crNum));
+            cellInfo.pos = new Vector3(posX, PosY, 0);
+        }
+    }
+
+    /// <summary>
+    /// 设置Cell显示状态
+    /// </summary>
+    /// <param name="cellInfo"></param>
+    /// <returns></returns>
+    protected bool SetCellState(ref CellInfo cellInfo)
+    {
+        if (IsOutRange(cellInfo))
+        {
+            if (cellInfo.obj != null)
             {
-                if (obj == null)
-                {
-                    GameObject newCell = GetPoolsObj();
-                    newCell.transform.localPosition = pos;
-                    newCell.name = i.ToString();
-                    _cellInfos[i].obj = newCell;
-                    ShowCallback(newCell, i);
-                }
+                ObjectPool.Instance.RecycleObj(CELLPOOL, cellInfo.obj);
             }
+            cellInfo.obj = null;
+            return false;
+        }
+        else
+        {
+            if (cellInfo.obj == null)
+            {
+                cellInfo.obj = ObjectPool.Instance.GetObject(CELLPOOL, _content);
+            }
+            //cellInfo.entity.gameObject.GetComponent<RectTransform>().anchoredPosition = cellInfo.pos;
+            cellInfo.obj.transform.localPosition = cellInfo.pos;
+            cellInfo.obj.SetActive(true);
+            return true;
         }
     }
 
     /// <summary>
     /// 检测超出显示区域或整个区域
     /// </summary>
-    /// <param name="pos"></param>
+    /// <param name="cellInfo"></param>
     /// <returns></returns>
-    protected bool IsOutRange(float pos)
+    protected bool IsOutRange(CellInfo cellInfo)
     {
+        float pos = _dir == UIDir.Vertical ? cellInfo.pos.y : cellInfo.pos.x;
         Vector3 contentPos = _content.anchoredPosition;
-        if (_dir == Direction.Vertical)
+        if (_dir == UIDir.Vertical)
         {
             if (pos + contentPos.y > _cellHeight || pos + contentPos.y < -_rectTrans.rect.height)//超出显示区域或超出整个区域
             {
@@ -280,45 +243,5 @@ public class UICircularScrollView : MonoBehaviour
             }
         }
         return false;
-    }
-
-    #region 对象池
-
-    protected virtual void SetPoolsObj(GameObject obj)
-    {
-        if (obj != null)
-        {
-            poolsObj.Push(obj);
-            obj.SetActive(false);
-        }
-    }
-
-    protected virtual GameObject GetPoolsObj()
-    {
-        GameObject cell = null;
-        if (poolsObj.Count > 0)
-        {
-            cell = poolsObj.Pop();
-        }
-        if (cell == null)
-        {
-            cell = Instantiate(_cell);
-        }
-        cell.transform.SetParent(_content);
-        cell.gameObject.SetActive(true);
-        return cell;
-    }
-
-    #endregion
-
-    public void DisposeAll()
-    {
-        ShowCallback = null;
-        ClickCallback = null;
-    }
-
-    void OnDestory()
-    {
-        DisposeAll();
     }
 }

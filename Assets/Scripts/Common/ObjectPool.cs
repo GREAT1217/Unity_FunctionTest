@@ -8,7 +8,7 @@ public class ObjectPool : MonoSingleton<ObjectPool>
     /// <summary>
     /// 对象池
     /// </summary>
-    private Dictionary<string, List<GameObject>> ObjectDict
+    private Dictionary<string, List<GameObject>> ObjPool
     {
         get
         {
@@ -41,36 +41,38 @@ public class ObjectPool : MonoSingleton<ObjectPool>
     /// <summary>
     /// 记录预设体字典
     /// </summary>
+    /// <param name="objName"></param>
     /// <param name="obj"></param>
-    public void SetPrefab(GameObject obj)
+    public void SetPrefab(string objName, GameObject obj)
     {
-        if (PrefabDict.ContainsKey(obj.name)) return;
-        PrefabDict.Add(obj.name, obj);
+        if (PrefabDict.ContainsKey(objName)) return;
+        PrefabDict.Add(objName, obj);
     }
 
     /// <summary>
     /// 从对象池中获取对象
     /// </summary>
-    /// <param name="objName"></param>
+    /// <param name="poolName"></param>
     /// <returns></returns>
-    public GameObject GetObject(string objName, Transform parent = null)
+    public GameObject GetObject(string poolName, Transform parent = null)
     {
         if (parent == null) parent = transform;
-        GameObject result = null;
-        if (ObjectDict.ContainsKey(objName))
+        GameObject result;
+        if (ObjPool.ContainsKey(poolName))
         {
-            if (ObjectDict[objName].Count > 0)
+            if (ObjPool[poolName].Count > 0)
             {
-                result = ObjectDict[objName][0];
+                result = ObjPool[poolName][0];
                 result.transform.SetParent(parent);
-                ObjectDict[objName].RemoveAt(0);
+                ObjPool[poolName].RemoveAt(0);
                 return result;
             }
         }
-        GameObject prefab = null;
-        if (PrefabDict.ContainsKey(objName))
+        if (PrefabDict.ContainsKey(poolName))
         {
-            prefab = PrefabDict[objName];
+            result = Instantiate(PrefabDict[poolName], parent);
+            result.name = poolName;
+            return result;
         }
         else
         {
@@ -79,9 +81,24 @@ public class ObjectPool : MonoSingleton<ObjectPool>
             //prefab = Resources.Load<GameObject>("Prefabs/" + objName);
             //_prefabDict.Add(objName, prefab);
         }
-        result = Instantiate(prefab, parent);
-        result.name = objName;
-        return result;
+    }
+
+    /// <summary>
+    /// 回收对象到对象池
+    /// </summary>
+    /// <param name="poolName"></param>
+    /// <param name="obj"></param>
+    public void RecycleObj(string poolName, GameObject obj)
+    {
+        obj.SetActive(false);
+        if (ObjPool.ContainsKey(poolName))
+        {
+            ObjPool[poolName].Add(obj);
+        }
+        else
+        {
+            ObjPool.Add(poolName, new List<GameObject>() { obj });
+        }
     }
 
     /// <summary>
@@ -90,16 +107,17 @@ public class ObjectPool : MonoSingleton<ObjectPool>
     /// <param name="objName"></param>
     public void RecycleObj(GameObject obj, Transform parent = null)
     {
+        //TODO  统一
         if (parent == null) parent = transform;
         obj.SetActive(false);
         obj.transform.SetParent(parent);
-        if (ObjectDict.ContainsKey(obj.name))
+        if (ObjPool.ContainsKey(obj.name))
         {
-            ObjectDict[obj.name].Add(obj);
+            ObjPool[obj.name].Add(obj);
         }
         else
         {
-            ObjectDict.Add(obj.name, new List<GameObject>() { obj });
+            ObjPool.Add(obj.name, new List<GameObject>() { obj });
         }
     }
 

@@ -21,11 +21,13 @@ public class UIBarGraphManager : MonoBehaviour
     //描述、条 管理
     private Text[] _descs;
     private Image[] _bars;
+    private const string DESCPOOL = "BDescPool";
+    private const string BARPOOL = "BarPool";
 
     private void Awake()
     {
-        ObjectPool.Instance.SetPrefab(_descPrefab.gameObject);
-        ObjectPool.Instance.SetPrefab(_barPrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(DESCPOOL, _descPrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(BARPOOL, _barPrefab.gameObject);
     }
 
     /// <summary>

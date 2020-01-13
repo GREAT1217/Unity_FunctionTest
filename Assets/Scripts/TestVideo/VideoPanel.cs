@@ -34,6 +34,7 @@ public class VideoPanel : MonoBehaviour
     public Sprite _spUnMute;
     public Slider _sliderVolume;
     //UI操作
+    public RectTransform _bg;
     public Text _textDuration;
     public Text _textTime;
     public Button _btnZoom;
@@ -41,28 +42,27 @@ public class VideoPanel : MonoBehaviour
     public Sprite _spMin;
     public float _zoomTime = 0.2f;
     //自动隐藏栏
+    public bool _autoHideBar;
     public float _autoHideInterval = 5f;//自动隐藏间隔
     public float _fadeTime = 0.2f;
-    //UI引用
-    private RectTransform _videoTransform;
-    private Image _videoState;
-    private Image _audioState;
-    private Image _zoomState;
 
     private UnityAction VideoEnd;//播放结束事件
     private Coroutine _sliderProcessCor;//更新进度条协程
     private float _defultVolume = 0.5f;//默认音量
     private float _curVolume;//静音前记录音量
-    private float _videoDuration;//总时长
-    private float _videoTime;//播放时间
+    private int _videoDuration;//总时长
+    private int _videoTime;//播放时间
     private bool _changingProcess;//调整进度中
     private bool _isPause;//暂停开关
     private bool _isMute;//静音开关
     private bool _isMax;//放大开关
     private Vector2 _maxSize;//放大尺寸
     private Vector2 _minSize;//缩小尺寸
+    private Vector3 _maxPos;//放大位置
+    private Vector3 _minPos;//放大位置
     private float _pointOnTime;//鼠标进入时间
     private bool _isHideBar;//栏是否隐藏
+    private bool _playEnd;//播放结束
 
     public void ShowVideo(string videoPath, string title, UnityAction videoEnd)
     {
@@ -74,25 +74,25 @@ public class VideoPanel : MonoBehaviour
         ChangeVolume(_defultVolume);
         PlayVideo();
 
-        _videoDuration = _videoPlayer.frameCount / _videoPlayer.frameRate;
-        _textDuration.text = string.Format(" / {0}:{1}", (_videoDuration / 60).ToString("F0").PadLeft(2, '0'), (_videoDuration % 60).ToString("F0").PadLeft(2, '0'));
+        //StartCoroutine(InitVideoDuration());
+
+        _videoDuration = (int)Mathf.Floor(_videoPlayer.frameCount / _videoPlayer.frameRate);
+        _textDuration.text = string.Format("{0:D2}:{1:D2}", _videoDuration / 60, _videoDuration % 60);
     }
 
     void Start()
     {
-        _videoState = _btnVideo.GetComponent<Image>();
-        _audioState = _btnAudio.GetComponent<Image>();
-        _zoomState = _btnZoom.GetComponent<Image>();
-        _videoTransform = _videoGraphic.GetComponent<RectTransform>();
-        _minSize = _videoTransform.sizeDelta;
+        _minPos = _bg.localPosition;
+        _maxPos = Vector3.zero;
+        _minSize = _bg.sizeDelta;
         _maxSize = new Vector2(Screen.width, Screen.height);
-        _btnClose.onClick.AddListener(CloseVideo);
+        if (_btnClose) _btnClose.onClick.AddListener(CloseVideo);
         _btnVideo.onClick.AddListener(PauseOrPlay);
         _btnAudio.onClick.AddListener(MuteOrNot);
-        _btnZoom.onClick.AddListener(MaxOrMin);
+        if (_btnZoom) _btnZoom.onClick.AddListener(MaxOrMinUI);
         UIEventTrigger.Add(_videoGraphic).PointerClick += PauseOrPlay;
-        UIEventTrigger.Add(_videoGraphic).PointerClick += ToShowBar;
-        UIEventTrigger.Add(_videoGraphic).PointerEnter = ToShowBar;
+        UIEventTrigger.Add(_videoGraphic).PointerClick += ShowBar;
+        UIEventTrigger.Add(_videoGraphic).PointerEnter = ShowBar;
         UIEventTrigger.Add(_sliderProcess).PointerDown = () => { ChangingProcess(true); };
         UIEventTrigger.Add(_sliderProcess).PointerUp = () => { ChangingProcess(false); };
         UIEventTrigger.Add(_sliderProcess).Drag = () => { ChangeProcess(_sliderProcess.value); };
@@ -107,9 +107,21 @@ public class VideoPanel : MonoBehaviour
         {
             _videoGraphic.texture = _videoPlayer.texture;
         }
-        UpdateProcess();
-        CheckToHideBar();
+        UpdateVideoProcess();
+        HideBar();
         CheckToFinishVideo();
+    }
+
+    /// <summary>
+    /// 初始化总时长
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator InitVideoDuration()
+    {
+        //unity2108加载视频速度比unity5慢
+        yield return new WaitUntil(() => _videoPlayer.frameRate != 0);
+        _videoDuration = (int)Mathf.Floor(_videoPlayer.frameCount / _videoPlayer.frameRate);
+        _textDuration.text = string.Format("{0:D2}:{1:D2}", _videoDuration / 60, _videoDuration % 60);
     }
 
     /// <summary>
@@ -117,13 +129,27 @@ public class VideoPanel : MonoBehaviour
     /// </summary>
     private void CheckToFinishVideo()
     {
+        if (_playEnd) return;
         if (_videoPlayer.frame >= (long)_videoPlayer.frameCount && _videoPlayer.isPlaying)
         {
-            PauseVideo();
+            Debug.Log("=====================视频播放结束============");
+            //PauseVideo();
+            _sliderProcess.value = 1;//防止结束时遇到进度条刷新间隔而停止刷新
             if (VideoEnd != null)
             {
                 VideoEnd();
             }
+            _playEnd = true;
+        }
+        if (_sliderProcess.value == 1)
+        {
+            Debug.Log("=====================视频播放结束============");
+            //PauseVideo();
+            if (VideoEnd != null)
+            {
+                VideoEnd();
+            }
+            _playEnd = true;
         }
     }
 
@@ -132,14 +158,30 @@ public class VideoPanel : MonoBehaviour
     /// </summary>
     private void CloseVideo()
     {
-        if (VideoEnd != null) VideoEnd();
-        gameObject.SetActive(false);
+        if (VideoEnd != null)
+        {
+            VideoEnd();
+        }
+        ClearVideoData();
     }
 
     /// <summary>
-    /// 更新进度
+    /// 清理数据
     /// </summary>
-    private void UpdateProcess()
+    private void ClearVideoData()
+    {
+        VideoEnd = null;
+        gameObject.SetActive(false);
+        if (_isMax)
+        {
+            MaxOrMinUI();
+        }
+    }
+
+    /// <summary>
+    /// 更新视频进度
+    /// </summary>
+    private void UpdateVideoProcess()
     {
         if (_changingProcess)
         {
@@ -147,9 +189,9 @@ public class VideoPanel : MonoBehaviour
         }
         else
         {
-            _videoTime = (float)_videoPlayer.time;
+            _videoTime = (int)_videoPlayer.time;
         }
-        _textTime.text = string.Format("{0}:{1}", (_videoTime / 60).ToString("F0").PadLeft(2, '0'), (_videoTime % 60).ToString("F0").PadLeft(2, '0'));
+        _textTime.text = string.Format("{0:D2}:{1:D2}", _videoTime / 60, _videoTime % 60);
     }
 
     /// <summary>
@@ -158,11 +200,12 @@ public class VideoPanel : MonoBehaviour
     /// <returns></returns>
     private IEnumerator UpdateSliderProcess()
     {
+        yield return new WaitUntil(() => _videoDuration != 0);
         while (true)
         {
             //减少刷新频率，防止点击抬起时sliderProcess卡顿
+            _sliderProcess.value = (float)_videoTime / _videoDuration;
             yield return new WaitForSeconds(0.2f);
-            _sliderProcess.value = _videoTime / _videoDuration;
         }
     }
 
@@ -190,10 +233,7 @@ public class VideoPanel : MonoBehaviour
     /// <param name="value"></param>
     private void ChangeProcess(float value)
     {
-        if (_videoPlayer.isPrepared)
-        {
-            _videoPlayer.time = _videoTime = _videoDuration * value;
-        }
+        _videoPlayer.time = _videoTime = (int)(_videoDuration * value);
     }
 
     /// <summary>
@@ -201,15 +241,17 @@ public class VideoPanel : MonoBehaviour
     /// </summary>
     private void PauseVideo()
     {
-        if (_videoPlayer.isPlaying)
+        //if (_videoPlayer.isPlaying)
         {
             _videoPlayer.Pause();
             _pauseState.SetActive(true);
-            _videoState.sprite = _spPlay;
+            _btnVideo.image.sprite = _spPlay;
             if (_sliderProcessCor != null)
             {
                 StopCoroutine(_sliderProcessCor);
+                _sliderProcessCor = null;
             }
+            _isPause = true;
         }
     }
 
@@ -218,12 +260,19 @@ public class VideoPanel : MonoBehaviour
     /// </summary>
     private void PlayVideo()
     {
-        if (!_videoPlayer.isPlaying)
+        Debug.Log("播放：pause状态" + _isPause);
+        // if (!_videoPlayer.isPlaying)
         {
+            if (_sliderProcess.value == 1)//重播
+            {
+                Debug.Log("重播");
+                ChangeProcess(0);
+            }
             _videoPlayer.Play();
             _pauseState.SetActive(false);
-            _videoState.sprite = _spPause;
+            _btnVideo.image.sprite = _spPause;
             _sliderProcessCor = StartCoroutine(UpdateSliderProcess());
+            _isPause = false;
         }
     }
 
@@ -241,6 +290,17 @@ public class VideoPanel : MonoBehaviour
         {
             PlayVideo();
         }
+    }
+
+    /// <summary>
+    /// 更改音量
+    /// </summary>
+    /// <param name="value"></param>
+    private void ChangeVolume(float value)
+    {
+        _sliderVolume.value = value;
+        _audioPlayer.volume = value;
+        _btnAudio.image.sprite = value == 0 ? _spMute : _spUnMute;
     }
 
     /// <summary>
@@ -262,39 +322,31 @@ public class VideoPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// 更改音量
-    /// </summary>
-    /// <param name="value"></param>
-    private void ChangeVolume(float value)
-    {
-        _sliderVolume.value = value;
-        _audioPlayer.volume = value;
-        _audioState.sprite = value == 0 ? _spMute : _spUnMute;
-    }
-
-    /// <summary>
     /// 放大或缩小UI
     /// </summary>
-    private void MaxOrMin()
+    private void MaxOrMinUI()
     {
         _isMax = !_isMax;
         if (_isMax)
         {
-            _videoTransform.DOSizeDelta(_maxSize, _zoomTime);
-            _zoomState.sprite = _spMin;
+            _bg.DOLocalMove(_maxPos, _zoomTime);
+            _bg.DOSizeDelta(_maxSize, _zoomTime);
+            _btnZoom.image.sprite = _spMin;
         }
         else
         {
-            _videoTransform.DOSizeDelta(_minSize, _zoomTime);
-            _zoomState.sprite = _spMax;
+            _bg.DOLocalMove(_minPos, _zoomTime);
+            _bg.DOSizeDelta(_minSize, _zoomTime);
+            _btnZoom.image.sprite = _spMax;
         }
     }
 
     /// <summary>
     /// 检测隐藏栏
     /// </summary>
-    private void CheckToHideBar()
+    private void HideBar()
     {
+        if (!_autoHideBar) return;
         if (_isHideBar) return;
         _pointOnTime += Time.deltaTime;
         if (_pointOnTime > _autoHideInterval)
@@ -307,8 +359,9 @@ public class VideoPanel : MonoBehaviour
     /// <summary>
     /// 显示栏
     /// </summary>
-    private void ToShowBar()
+    private void ShowBar()
     {
+        if (!_autoHideBar) return;
         ShowOrHideBar(true);
         _pointOnTime = 0;
         _isHideBar = false;

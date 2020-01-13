@@ -22,11 +22,13 @@ public class UIPieGraphManager : MonoBehaviour
     private Text[] _notes;
     private UIPieImage[] _pies;
     private Color[] _colors;
+    private const string NOTEPOOL = "NotePool";
+    private const string PIEPOOL = "PiePool";
 
     private void Awake()
     {
-        ObjectPool.Instance.SetPrefab(_notePrefab.gameObject);
-        ObjectPool.Instance.SetPrefab(_piePrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(NOTEPOOL, _notePrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(PIEPOOL, _piePrefab.gameObject);
     }
 
     /// <summary>

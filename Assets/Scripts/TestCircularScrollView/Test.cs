@@ -4,6 +4,48 @@ using UnityEngine.UI;
 
 public class Test : MonoBehaviour
 {
+    public UICircularScrollView _circularH;
+    public UICircularScrollView _circularV;
+    public UICircularFlodScrollView _flodCircular;
+
+    void Start()
+    {
+        _circularH.Init(CellCallBack);
+        _circularH.ShowList(1000);
+        _circularV.Init(CellCallBack);
+        _circularV.ShowList(1000);
+        _flodCircular.Init(FlodBtnCallback, FlodCellCallback);
+        _flodCircular.ShowList(2, 3, 4, 5, 6, 7, 8);
+    }
+
+    private void CellCallBack(GameObject cell, int index)
+    {
+        cell.name = index.ToString();
+        cell.transform.Find("Text").GetComponent<Text>().text = index.ToString();
+    }
+
+    void FlodCellCallback(GameObject cell, int flodIndex, int cellIndex)
+    {
+        cell.transform.Find("Text").GetComponent<Text>().text = flodIndex + "-" + cellIndex;
+    }
+
+    void FlodBtnCallback(GameObject flod, int index)
+    {
+        flod.GetComponentInChildren<Text>().text = "折叠按钮" + index.ToString();
+    }
+
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            _circularH.ShowList(50);
+        }
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            _circularH.ShowList(120);
+        }
+    }
 
 }
 

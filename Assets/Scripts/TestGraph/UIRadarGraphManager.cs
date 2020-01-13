@@ -19,13 +19,14 @@ public class UIRadarGraphManager : MaskableGraphic
     private float _radius;//半径
     private float _perRadian;//弧度
     private float _descSpace;//描述间隔
+    private const string DESCPOOL = "RDescPool";
 
     protected override void Awake()
     {
         base.Awake();
         _radius = Mathf.Min(rectTransform.sizeDelta.x, rectTransform.sizeDelta.y) / 2;
         _descSpace = Mathf.Max(_descPrefab.rectTransform.sizeDelta.x, _descPrefab.rectTransform.sizeDelta.y) / 2;
-        ObjectPool.Instance.SetPrefab(_descPrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(DESCPOOL, _descPrefab.gameObject);
     }
 
     /// <summary>

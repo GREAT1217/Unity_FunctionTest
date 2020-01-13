@@ -47,12 +47,15 @@ public class UILineGraphManager : MonoBehaviour
     private Text[] _descs;
     private RectTransform[] _dots;
     private Image[] _lines;
+    private const string DESCPOOL = "LDescPool";
+    private const string DOTPOOL = "DotPool";
+    private const string LINEPOOL = "LinePool";
 
     private void Awake()
     {
-        ObjectPool.Instance.SetPrefab(_descPrefab.gameObject);
-        ObjectPool.Instance.SetPrefab(_dotPrefab.gameObject);
-        ObjectPool.Instance.SetPrefab(_linePrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(DESCPOOL, _descPrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(DOTPOOL, _dotPrefab.gameObject);
+        ObjectPool.Instance.SetPrefab(LINEPOOL, _linePrefab.gameObject);
     }
 
     /// <summary>
