@@ -2,11 +2,12 @@
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class Test : MonoBehaviour
+public class TestCircularScrollView : MonoBehaviour
 {
     public UICircularScrollView _circularH;
     public UICircularScrollView _circularV;
-    public UICircularFlodScrollView _flodCircular;
+    public UICircularFlodScrollView _flodCircularH;
+    public UICircularFlodScrollView _flodCircularV;
 
     void Start()
     {
@@ -14,8 +15,10 @@ public class Test : MonoBehaviour
         _circularH.ShowList(1000);
         _circularV.Init(CellCallBack);
         _circularV.ShowList(1000);
-        _flodCircular.Init(FlodBtnCallback, FlodCellCallback);
-        _flodCircular.ShowList(2, 3, 4, 5, 6, 7, 8);
+        _flodCircularH.Init(FlodBtnCallback, FlodCellCallback);
+        _flodCircularH.ShowList(2, 3, 4, 5, 6, 7, 8);
+        _flodCircularV.Init(FlodBtnCallback, FlodCellCallback);
+        _flodCircularV.ShowList(2, 3, 4, 5, 6, 7, 8);
     }
 
     private void CellCallBack(GameObject cell, int index)

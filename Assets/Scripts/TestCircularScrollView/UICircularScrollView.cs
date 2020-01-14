@@ -23,7 +23,7 @@ public class UICircularScrollView : MonoBehaviour
     /// </summary>
     protected struct CellInfo
     {
-        public Vector3 pos;
+        public Vector2 pos;
         public GameObject obj;
     }
     protected CellInfo[] _cellInfos;
@@ -113,21 +113,10 @@ public class UICircularScrollView : MonoBehaviour
     }
 
     /// <summary>
-    /// 设置RectTransform左上角锚点
-    /// </summary>
-    /// <param name="rectTrans"></param>
-    protected void SetTopLeftAnchor(RectTransform rectTrans)
-    {
-        rectTrans.pivot = Vector2.up;
-        rectTrans.anchorMin = Vector2.up;
-        rectTrans.anchorMax = Vector2.up;
-    }
-
-    /// <summary>
     /// 设置Content尺寸
     /// </summary>
     /// <param name="count"></param>
-    protected void SetContentSize(int count)
+    protected virtual void SetContentSize(int count)
     {
         if (_dir == UIDir.Vertical)
         {
@@ -145,6 +134,17 @@ public class UICircularScrollView : MonoBehaviour
             contentSize = Mathf.Max(contentSize, _rectTrans.rect.width);
             _content.sizeDelta = new Vector2(contentSize, _contentHeight);
         }
+    }
+
+    /// <summary>
+    /// 设置RectTransform左上角锚点
+    /// </summary>
+    /// <param name="rectTrans"></param>
+    protected void SetTopLeftAnchor(RectTransform rectTrans)
+    {
+        rectTrans.pivot = Vector2.up;
+        rectTrans.anchorMin = Vector2.up;
+        rectTrans.anchorMax = Vector2.up;
     }
 
     /// <summary>
@@ -180,13 +180,13 @@ public class UICircularScrollView : MonoBehaviour
         {
             float posY = -(_cellHeight * Mathf.CeilToInt(index / _crNum) + _spacing * Mathf.CeilToInt(index / _crNum));
             float posX = _cellWight * (index % _crNum) + _spacing * (index % _crNum);
-            cellInfo.pos = new Vector3(posX, posY, 0);
+            cellInfo.pos = new Vector2(posX, posY);
         }
         else
         {
             float posX = _cellWight * Mathf.CeilToInt(index / _crNum) + _spacing * Mathf.CeilToInt(index / _crNum);
             float PosY = -(_cellHeight * (index % _crNum) + _spacing * (index % _crNum));
-            cellInfo.pos = new Vector3(posX, PosY, 0);
+            cellInfo.pos = new Vector2(posX, PosY);
         }
     }
 
