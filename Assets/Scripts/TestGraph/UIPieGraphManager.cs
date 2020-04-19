@@ -81,7 +81,7 @@ public class UIPieGraphManager : MonoBehaviour
         _colors = new Color[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            Text note = ObjectPool.Instance.GetObject(_notePrefab.name, _noteContent).GetComponent<Text>();
+            Text note = ObjectPool.Instance.GetObject(NOTEPOOL, _noteContent).GetComponent<Text>();
             _colors[i] = new Color(0, (float)i / _datas.Length, 0);
             note.text = _datas[i]._desc;
             note.GetComponentInChildren<Image>().color = _colors[i];
@@ -104,7 +104,7 @@ public class UIPieGraphManager : MonoBehaviour
         Vector3 _curAngle = Vector3.zero;
         for (int i = 0; i < _datas.Length; i++)
         {
-            UIPieImage pie = ObjectPool.Instance.GetObject(_piePrefab.name, _pieContent).GetComponent<UIPieImage>();
+            UIPieImage pie = ObjectPool.Instance.GetObject(PIEPOOL, _pieContent).GetComponent<UIPieImage>();
             pie.rectTransform.sizeDelta = Vector2.one * _pieRadius * 2;
             float rate = _datas[i]._value / sum;
             pie.fillAmount = 0;

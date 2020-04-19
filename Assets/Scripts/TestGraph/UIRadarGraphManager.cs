@@ -101,7 +101,7 @@ public class UIRadarGraphManager : MaskableGraphic
         GetVertexs();
         for (int i = 0; i < _vertexs.Length; i++)
         {
-            Text desc = ObjectPool.Instance.GetObject(_descPrefab.name, _descContent).GetComponent<Text>();
+            Text desc = ObjectPool.Instance.GetObject(DESCPOOL, _descContent).GetComponent<Text>();
             desc.text = _datas[i]._desc;
             Vector2 pos = _vertexs[i];
             if (Mathf.Abs(pos.x) >= 0.1f)

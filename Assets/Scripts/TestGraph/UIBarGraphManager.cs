@@ -63,7 +63,7 @@ public class UIBarGraphManager : MonoBehaviour
         _descs = new Text[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            Text desc = ObjectPool.Instance.GetObject(_descPrefab.name, _descContent).GetComponent<Text>();
+            Text desc = ObjectPool.Instance.GetObject(DESCPOOL, _descContent).GetComponent<Text>();
             desc.text = _datas[i]._desc;
             desc.transform.SetAsLastSibling();//使用对象池和自动布局组件会调乱顺序，要重置
             desc.gameObject.SetActive(true);
@@ -80,7 +80,7 @@ public class UIBarGraphManager : MonoBehaviour
         _bars = new Image[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            Image bar = ObjectPool.Instance.GetObject(_barPrefab.name, _barContent).GetComponent<Image>();
+            Image bar = ObjectPool.Instance.GetObject(BARPOOL, _barContent).GetComponent<Image>();
             bar.rectTransform.sizeDelta = new Vector2(_barWidth, bar.rectTransform.sizeDelta.y);
             bar.rectTransform.localPosition = new Vector3(_descs[i].rectTransform.localPosition.x, bar.rectTransform.localPosition.y, 0);//锚点在中心
             bar.fillAmount = 0;

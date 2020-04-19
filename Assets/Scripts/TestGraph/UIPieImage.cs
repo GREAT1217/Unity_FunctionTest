@@ -92,7 +92,7 @@ public class UIPieImage : Image
             if (i - 1 < rate && i >= rate)
             {
                 pathes = new Vector2[i + 2];
-                Debug.Log(i);
+                //Debug.Log(i);
                 for (int j = 2; j < pathes.Length - 1; j++)
                 {
                     pathes[j] = new Vector2(radius * Mathf.Sin(radian / i * (j - 1)), radius * Mathf.Cos(radian / i * (j - 1)));

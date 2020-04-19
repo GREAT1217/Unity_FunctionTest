@@ -93,7 +93,7 @@ public class UILineGraphManager : MonoBehaviour
         _descs = new Text[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            Text desc = ObjectPool.Instance.GetObject(_descPrefab.name, _descContent).GetComponent<Text>();
+            Text desc = ObjectPool.Instance.GetObject(DESCPOOL, _descContent).GetComponent<Text>();
             desc.text = _datas[i]._desc;
             desc.transform.SetAsLastSibling();//使用对象池和自动布局组件会调乱顺序，要重置
             desc.gameObject.SetActive(true);
@@ -111,7 +111,7 @@ public class UILineGraphManager : MonoBehaviour
         _dots = new RectTransform[_datas.Length];
         for (int i = 0; i < _datas.Length; i++)
         {
-            RectTransform dot = ObjectPool.Instance.GetObject(_dotPrefab.name, _dotContent).GetComponent<RectTransform>();
+            RectTransform dot = ObjectPool.Instance.GetObject(DOTPOOL, _dotContent).GetComponent<RectTransform>();
             dot.localPosition = new Vector3(_descs[i].transform.localPosition.x, height * (_datas[i].Rate - 0.5f), 0);//锚点在中心
             dot.sizeDelta = Vector2.one * _lineWidth * 2;
             dot.gameObject.SetActive(true);
@@ -141,7 +141,7 @@ public class UILineGraphManager : MonoBehaviour
         Vector3 dir = curPos - nextPos;
         float angle = Vector3.Angle(Vector3.up, dir);
         Vector2 center = (curPos + nextPos) / 2;
-        Image line = ObjectPool.Instance.GetObject(_linePrefab.name, _lineContent).GetComponent<Image>();
+        Image line = ObjectPool.Instance.GetObject(LINEPOOL, _lineContent).GetComponent<Image>();
         line.rectTransform.localEulerAngles = Vector3.forward * angle;
         line.rectTransform.localPosition = center;
         line.rectTransform.sizeDelta = new Vector2(_lineWidth, length);
