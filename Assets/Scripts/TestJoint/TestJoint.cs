@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class test : MonoBehaviour
+public class TestJoint : MonoBehaviour
 {
     public GameObject connectedObj = null;
     Component jointComponent = null;
