@@ -125,7 +125,7 @@ public class ObjectPool : MonoSingleton<ObjectPool>
     /// 删除对象池
     /// </summary>
     /// <param name="poolName"></param>
-    public void DestoryPool(string poolName)
+    public void DestroyPool(string poolName)
     {
         if (!_objectDict.ContainsKey(poolName)) return;
         List<GameObject> objs = _objectDict[poolName];
