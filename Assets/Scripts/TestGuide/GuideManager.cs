@@ -33,41 +33,42 @@ public interface IUIGuide
 /// </summary>
 public class GuideManager : MonoBehaviour
 {
-    public Canvas _guideCanvas;//
-    public GuideUICircle _circleUIGuide;//圆形UI引导
-    public GuideUIRect _rectUIGuide;//矩形UI引导
-    public RectTransform _guideArrow;//引导箭头
-    public Text _guideText;//引导文本
-    public GuidePathLine _guideLine;//引导线
-    public Transform _player;//引导对象
+    public Canvas _guideCanvas; //
+    public GuideUICircle _circleUIGuide; //圆形UI引导
+    public GuideUIRect _rectUIGuide; //矩形UI引导
+    public RectTransform _guideArrow; //引导箭头
+    public Text _guideText; //引导文本
+    public GuidePathLine _guideLine; //引导线
+    public GuideDirection _guideDirection; //引导方向
+    public Transform _player; //引导对象
     [HideInInspector]
-    public List<IGuideData> _guideDatas;//引导数据列表
+    public List<IGuideData> _guideDatas; //引导数据列表
 
-    private EGuideType _curGuideType;//当前引导类型
-    private int _curGuideIndex = -1;//当前引导索引
-    private IUIGuide _curUIGuide;//当前UI引导
-    private KeyCode _curGuideKey;//当前引导按键类型
-    private int _curMouseKey = -1;//当前引导鼠标按键值
-    private float _curMouseValue = -1;//当前引导鼠标滑轮值
-    private string _curMouseDir;//当前引导鼠标移动方向
-    private GameObject _curGuideObj;//当前引导对象
-    private Button _curGuideBtn;//当前引导按钮对象
-    private GuideTrigger _tempTrigger;//临时触发检测组件
-    private float _curGuideTimer = -1;//当前引导计时
-    private float _tempTimer = 0;//临时计时数据
-    private RaycastHit _hit;//
-    private Ray _ray;//
+    private EGuideType _curGuideType; //当前引导类型
+    private int _curGuideIndex = -1; //当前引导索引
+    private IUIGuide _curUIGuide; //当前UI引导
+    private KeyCode _curGuideKey; //当前引导按键类型
+    private int _curMouseKey = -1; //当前引导鼠标按键值
+    private float _curMouseValue = -1; //当前引导鼠标滑轮值
+    private string _curMouseDir; //当前引导鼠标移动方向
+    private GameObject _curGuideObj; //当前引导对象
+    private Button _curGuideBtn; //当前引导按钮对象
+    private GuideTrigger _tempTrigger; //临时触发检测组件
+    private float _curGuideTimer = -1; //当前引导计时
+    private float _tempTimer = 0; //临时计时数据
+    private RaycastHit _hit; //
+    private Ray _ray; //
 
     void Start()
     {
-        _tempTrigger = _player.gameObject.AddComponent<GuideTrigger>();//不需要触发检测不加
+        _tempTrigger = _player.gameObject.AddComponent<GuideTrigger>(); //不需要触发检测不加
         InitGuideData();
-        if (_guideDatas != null) StartGuide(0);//开始引导
+        if (_guideDatas != null) StartGuide(0); //开始引导
     }
 
     private void InitGuideData()
     {
-        _guideDatas = new List<IGuideData>();//GIndex暂时没用到，直接按列表索引来的
+        _guideDatas = new List<IGuideData>(); //GIndex暂时没用到，直接按列表索引来的
         _guideDatas.Add(new GuideUI("GuideObjects/GuideCanvas/RectButton", EGuideShape.Rect) { GInfo = "点击矩形按钮" });
         _guideDatas.Add(new GuideUI("GuideObjects/GuideCanvas/CircleImage", EGuideShape.Circle) { GInfo = "点击圆形图片" });
         _guideDatas.Add(new GuideIDown(KeyCode.Space) { GInfo = "按下空格键" });
@@ -167,6 +168,7 @@ public class GuideManager : MonoBehaviour
     }
 
     #region 引导内容
+
     /// <summary>
     /// 按键引导
     /// </summary>
@@ -178,6 +180,7 @@ public class GuideManager : MonoBehaviour
         _curGuideKey = key;
         _curGuideType = EGuideType.InputDown;
     }
+
     /// <summary>
     /// 检查按键
     /// </summary>
@@ -201,8 +204,8 @@ public class GuideManager : MonoBehaviour
         ShowTip(info);
         _curGuideObj = GameObject.Find(objPath);
         _curGuideType = EGuideType.Path;
-        _tempTrigger.TriggerEnter = EndPathGuide;//使用触发检测终点
-        if (_curGuideObj != null )
+        _tempTrigger.TriggerEnter = EndPathGuide; //使用触发检测终点
+        if (_curGuideObj != null)
         {
             if (!_curGuideObj.activeInHierarchy)
             {
@@ -210,8 +213,10 @@ public class GuideManager : MonoBehaviour
             }
             _curGuideObj.GetComponent<MeshRenderer>().enabled = true;
             _guideLine.ShowLine(_player.gameObject, _curGuideObj);
+            _guideDirection.ShowDirection(_curGuideObj.transform);
         }
     }
+
     /// <summary>
     /// 检查触发终点
     /// </summary>
@@ -225,6 +230,7 @@ public class GuideManager : MonoBehaviour
             _curGuideType = EGuideType.None;
             _curGuideObj = null;
             _guideLine.HideLine();
+            _guideDirection.HideDirection();
             _tempTrigger.TriggerEnter = null;
             EndGuide();
         }
@@ -243,6 +249,7 @@ public class GuideManager : MonoBehaviour
         _curMouseValue = dragValue;
         _curGuideType = EGuideType.MouseDrag;
     }
+
     /// <summary>
     /// 检查鼠标拖拽
     /// </summary>
@@ -266,6 +273,7 @@ public class GuideManager : MonoBehaviour
             }
         }
     }
+
     /// <summary>
     /// 结束鼠标拖拽引导
     /// </summary>
@@ -293,6 +301,7 @@ public class GuideManager : MonoBehaviour
         _curGuideTimer = time;
         _curGuideType = EGuideType.MouseDown;
     }
+
     /// <summary>
     /// 检查鼠标按键
     /// </summary>
@@ -329,6 +338,7 @@ public class GuideManager : MonoBehaviour
             }
         }
     }
+
     /// <summary>
     /// 结束按键引导
     /// </summary>
@@ -353,6 +363,7 @@ public class GuideManager : MonoBehaviour
         _curMouseValue = wheelValue;
         _curGuideType = EGuideType.MouseWheel;
     }
+
     /// <summary>
     /// 检查鼠标滚轮
     /// </summary>
@@ -363,6 +374,7 @@ public class GuideManager : MonoBehaviour
             EndMouseWheelGuide();
         }
     }
+
     /// <summary>
     /// 结束鼠标滚轮引导
     /// </summary>
@@ -386,6 +398,7 @@ public class GuideManager : MonoBehaviour
         _curGuideTimer = time;
         _curGuideType = EGuideType.Timer;
     }
+
     /// <summary>
     /// 检测计时
     /// 单纯的计时
@@ -399,6 +412,7 @@ public class GuideManager : MonoBehaviour
             EndTimerGuide();
         }
     }
+
     /// <summary>
     /// 检测计时
     /// 需要触发
@@ -414,6 +428,7 @@ public class GuideManager : MonoBehaviour
             EndTimerGuide();
         }
     }
+
     /// <summary>
     /// 结束计时引导
     /// </summary>
@@ -439,6 +454,7 @@ public class GuideManager : MonoBehaviour
         StartCoroutine(WaitLoad(uiPath, shape));
         _curGuideType = EGuideType.UI;
     }
+
     /// <summary>
     /// 等待加载UI
     /// 避免动态加载的报错
@@ -467,6 +483,7 @@ public class GuideManager : MonoBehaviour
             _curGuideObj.gameObject.AddComponent<GuideEvents>().SingleClick += EndUIGuide;
         }
     }
+
     /// <summary>
     /// 设置引导遮罩
     /// </summary>
@@ -486,6 +503,7 @@ public class GuideManager : MonoBehaviour
         _curUIGuide.SetTarget(target, _guideCanvas);
         _curUIGuide.gameObject.SetActive(true);
     }
+
     /// <summary>
     /// 设置引导箭头
     /// </summary>
@@ -514,14 +532,15 @@ public class GuideManager : MonoBehaviour
         Vector3 direction = target.position - _guideArrow.transform.position;
         _guideArrow.transform.rotation = Quaternion.FromToRotation(Vector3.right, direction.normalized);
     }
+
     /// <summary>
     /// 结束UI遮罩引导
     /// </summary>
     private void EndUIGuide()
     {
         _curGuideType = EGuideType.None;
-        _curUIGuide.gameObject.SetActive(false);//关闭形状遮罩
-        _guideArrow.gameObject.SetActive(false);//关闭箭头
+        _curUIGuide.gameObject.SetActive(false); //关闭形状遮罩
+        _guideArrow.gameObject.SetActive(false); //关闭箭头
         if (_curGuideBtn) _curGuideBtn.onClick.RemoveListener(EndUIGuide);
         else Destroy(_curGuideObj.GetComponent<GuideEvents>());
         _curGuideObj = null;
@@ -554,6 +573,7 @@ public class GuideManager : MonoBehaviour
             }
         }
     }
+
     /// <summary>
     /// 结束事件引导
     /// </summary>
@@ -564,9 +584,11 @@ public class GuideManager : MonoBehaviour
         _curGuideObj = null;
         EndGuide();
     }
+
     #endregion
 
     #region 提示信息
+
     /// <summary>
     /// 显示Tip
     /// </summary>
@@ -575,6 +597,7 @@ public class GuideManager : MonoBehaviour
     {
         _guideText.GetComponentInChildren<Text>().text = info;
     }
+
     /// <summary>
     /// 隐藏Tip
     /// </summary>
@@ -582,6 +605,7 @@ public class GuideManager : MonoBehaviour
     {
         _guideText.GetComponentInChildren<Text>().text = "";
     }
+
     private IEnumerator DoScale(RectTransform trans, Vector3 targetScale, float time)
     {
         Vector3 target = targetScale - trans.localScale;
@@ -592,5 +616,6 @@ public class GuideManager : MonoBehaviour
         }
         trans.localScale = targetScale;
     }
+
     #endregion
 }
